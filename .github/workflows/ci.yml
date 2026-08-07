@@ -208,4 +208,4 @@ jobs:
           shared-key: tauri-${{ matrix.os }}
 
       - name: Compile Tauri application
-        run: pnpm run tauri:build -- --no-bundle
+        run: pnpm --filter @limen/home-host exec tauri build --no-bundle
