@@ -10,10 +10,10 @@ LIMEN está en **M1: prueba visual controller-first**. La pila inicial ya está 
 
 - Core y servicios nativos: Rust.
 - Home: Tauri 2 + React + TypeScript.
-- Presentación 3D: Three.js, con WebGL2 como baseline.
+- Presentación 3D: Three.js mediante React Three Fiber, con WebGL2 como baseline y fallback estático.
 - Organización: monorepo con varios procesos y paquetes.
 
-La primera Home ejecutable usa datos simulados para validar composición, foco, mando y rendimiento antes de construir Core.
+La primera Home ejecutable usa datos simulados y una escena 3D animada en tiempo real para validar composición, foco, mando y rendimiento antes de construir Core.
 
 ## Documentación principal
 

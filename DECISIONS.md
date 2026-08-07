@@ -209,7 +209,9 @@ Estado: **aceptada como condición de D-001**.
 
 - DOM/CSS para texto, navegación, accesibilidad y paneles.
 - Motion/Web Animations para transiciones 2D.
-- Three.js con WebGL2 para escena espacial.
+- Three.js con WebGL2 para la escena espacial, integrado de forma declarativa mediante React Three Fiber 9.
+- La escena 3D es ambiental: reacciona al puntero y al foco de teclado/mando, pero los menús y acciones siguen siendo DOM accesible.
+- Un recurso raster original actúa como fallback si WebGL no está disponible o el usuario reduce el movimiento.
 - WebGPU solo si una capability probe y benchmarks por plataforma lo aprueban.
 - Ninguna acción esencial existe únicamente dentro del canvas 3D.
 

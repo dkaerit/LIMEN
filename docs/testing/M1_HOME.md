@@ -47,11 +47,15 @@ python tools/check_repository.py
 
 - Build web de producción correcta.
 - Seis pruebas unitarias sobre biblioteca simulada y navegación espacial.
-- 160 fichas simuladas sin arte comercial incluido.
-- Recorrido de teclado comprobado: **Jugar → primera ficha → ficha derecha**.
+- 160 fichas simuladas con nombres y arte originales; no se incluye arte comercial.
+- Escena Three.js/R3F animada en tiempo real, con parallax por puntero y por foco de teclado/mando.
+- Fallback raster original disponible para reducción de movimiento o fallo de WebGL.
+- Recorrido de teclado y mando comprobado entre Inicio, Biblioteca, Descubrir, Comunidad, Aplicaciones, Añadir contenido, Configuración y Ficha del juego.
+- Todos los elementos que parecen accionables responden; las funciones de M2/M3 muestran de forma explícita que aún no modifican archivos ni lanzan procesos.
+- La paleta de navegación usa azul/cian/violeta; el verde se reserva para estados semánticos positivos.
 - Acción Jugar muestra el límite honesto del prototipo; no simula una sesión inexistente.
 - Biblioteca completa accesible y desplazable.
-- Inspección visual manual a 1920×1080 y 1280×800.
+- Inspección visual manual a 1920×1080, 1280×800 y 1143×918.
 - Sin errores ni advertencias en consola durante el recorrido comprobado.
 
 Todavía no se afirma un objetivo de 60 fps: faltan la medición prolongada, el hardware de referencia y la virtualización explícita de la biblioteca exigidas para cerrar M1.
