@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LIMEN application icon</title>
+  <desc id="desc">A luminous blue threshold ring on a dark rounded square.</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="44%" r="72%">
+      <stop offset="0" stop-color="#101a3d"/>
+      <stop offset="0.58" stop-color="#060a19"/>
+      <stop offset="1" stop-color="#010204"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="18%" y1="12%" x2="82%" y2="88%">
+      <stop offset="0" stop-color="#8ff9ff"/>
+      <stop offset="0.32" stop-color="#55b8ff"/>
+      <stop offset="0.68" stop-color="#5969ff"/>
+      <stop offset="1" stop-color="#b75cff"/>
+    </linearGradient>
+    <filter id="outer-glow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="42" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="inner-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+
+  <rect x="24" y="24" width="976" height="976" rx="224" fill="url(#background)"/>
+  <circle cx="512" cy="512" r="274" fill="none" stroke="#317cff" stroke-width="54" opacity="0.28" filter="url(#outer-glow)"/>
+  <circle cx="512" cy="512" r="274" fill="none" stroke="url(#ring)" stroke-width="34" filter="url(#outer-glow)"/>
+  <circle cx="512" cy="512" r="238" fill="none" stroke="#d4fbff" stroke-width="8" opacity="0.86"/>
+  <circle cx="512" cy="512" r="299" fill="none" stroke="#3c7fff" stroke-width="5" opacity="0.55" filter="url(#inner-glow)"/>
+  <path d="M319 320 A272 272 0 0 1 704 704" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="704" cy="704" r="15" fill="#94ecff" filter="url(#outer-glow)"/>
+</svg>
