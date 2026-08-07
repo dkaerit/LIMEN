@@ -10,6 +10,8 @@ export interface GameSummary {
   accent: string;
   accentSecondary: string;
   compatibility: "Perfecta" | "Excelente" | "Verificada";
+  artwork: string;
+  artworkPosition: string;
 }
 
 const titleStarts = [
@@ -55,6 +57,12 @@ const palettes = [
 
 const platforms: GamePlatform[] = ["PS2", "PC", "ARCADE", "HANDHELD", "16-BIT"];
 
+const artworks = [
+  "/assets/crystal-threshold-v1.png",
+  "/assets/golden-sanctuary-v1.png",
+  "/assets/limen-spatial-bg-v1.png",
+] as const;
+
 export const games: GameSummary[] = Array.from({ length: 160 }, (_, index) => {
   const palette = palettes[index % palettes.length] ?? palettes[0];
   const platform = platforms[index % platforms.length] ?? "PC";
@@ -65,11 +73,18 @@ export const games: GameSummary[] = Array.from({ length: 160 }, (_, index) => {
 
   return {
     id: `game-${String(index + 1).padStart(3, "0")}`,
-    title: index === 0 ? "Final Fantasy X" : `${titleStart} ${titleEnd}`,
+    title:
+      index === 0
+        ? "Crystal Voyage"
+        : index === 1
+          ? "Golden Sanctuary"
+          : `${titleStart} ${titleEnd}`,
     subtitle:
       index === 0
-        ? "El umbral de Spira"
-        : `Entrada de prueba ${String(index + 1).padStart(3, "0")}`,
+        ? "Más allá del umbral"
+        : index === 1
+          ? "El jardín de los antiguos"
+          : `Entrada de prueba ${String(index + 1).padStart(3, "0")}`,
     platform: index === 0 ? "PS2" : platform,
     playtime: `${2 + ((index * 7) % 83)} h ${String((index * 13) % 60).padStart(2, "0")} min`,
     progress: index === 0 ? 62 : 8 + ((index * 17) % 88),
@@ -81,5 +96,7 @@ export const games: GameSummary[] = Array.from({ length: 160 }, (_, index) => {
         : index % 3 === 0
           ? "Excelente"
           : "Perfecta",
+    artwork: artworks[index % artworks.length] ?? artworks[0],
+    artworkPosition: index % 3 === 1 ? "68% center" : "center",
   };
 });

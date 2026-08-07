@@ -35,7 +35,7 @@ export function ControllerHint({
   glyph,
   children,
 }: {
-  glyph: string;
+  glyph: ReactNode;
   children: ReactNode;
 }) {
   return (
