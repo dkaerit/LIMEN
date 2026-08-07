@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Política de seguridad
-    url: https://github.com/dkaerit/LIMEN/blob/main/SECURITY.md
-    about: Consulta cómo informar de una vulnerabilidad de forma privada.
+  - name: Informar de una vulnerabilidad
+    url: https://github.com/dkaerit/LIMEN/security/advisories/new
+    about: Usa el formulario privado; no publiques detalles explotables en una issue.
