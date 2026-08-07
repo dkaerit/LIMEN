@@ -1,0 +1,33 @@
+name: Propuesta
+description: Proponer una mejora alineada con el roadmap
+title: "[Propuesta]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: ¿Qué necesidad del usuario resuelve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Explica el resultado, no solo la implementación.
+    validations:
+      required: true
+
+  - type: input
+    id: milestone
+    attributes:
+      label: Hito relacionado
+      description: Si lo conoces, indica M1, M2, etc.
+
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: Riesgos y alternativas
+      description: Permisos, portabilidad, rendimiento, licencias o complejidad.

@@ -1,0 +1,77 @@
+# Operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+
+# Node / frontend
+node_modules/
+.pnpm-store/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Rust / Tauri
+target/
+**/target/
+
+# Local LIMEN data
+.limen/
+/data/
+/logs/
+/captures/
+/saves/
+/bios/
+/firmware/
+/roms/
+/games/
+
+# Game, firmware and emulator artifacts
+*.iso
+*.cso
+*.chd
+*.rvz
+*.wbfs
+*.wad
+*.xci
+*.nsp
+*.pkg
+*.rap
+*.bios
+*.rom
+*.sav
+*.state
+*.exe
+*.dll
+*.pdb
+*.so
+*.dylib
+*.AppImage
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+.cache/

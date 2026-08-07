@@ -1,0 +1,49 @@
+name: Bug
+description: Informar de un comportamiento reproducible de LIMEN
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No adjuntes ROMs, BIOS, firmware, claves, guardados personales ni secretos. Para vulnerabilidades, usa la política de seguridad.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué ocurrió y qué esperabas?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: Usa datos sintéticos o contenido libre cuando sea posible.
+    validations:
+      required: true
+
+  - type: input
+    id: revision
+    attributes:
+      label: Revisión
+      description: Commit o versión de LIMEN.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - Windows 11
+        - SteamOS/Linux
+        - No aplica
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnóstico redactado
+      description: Elimina nombres de usuario, rutas personales, tokens y contenido protegido.

@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect workspaces
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      node: ${{ steps.detect.outputs.node }}
+      rust: ${{ steps.detect.outputs.rust }}
+      tauri: ${{ steps.detect.outputs.tauri }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect manifests
+        id: detect
+        shell: bash
+        run: |
+          if [[ -f package.json && -f pnpm-lock.yaml ]]; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ -f Cargo.toml ]]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if find . -path './.git' -prune -o \( -name 'tauri.conf.json' -o -name 'tauri.conf.json5' \) -print -quit | grep -q .; then
+            echo "tauri=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tauri=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  repository-policy:
+    name: Repository policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate repository
+        run: python tools/check_repository.py
+
+  node-quality:
+    name: Node quality
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable package manager
+        run: |
+          corepack enable
+          corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Run static analysis
+        run: |
+          pnpm run lint
+          pnpm run typecheck
+
+      - name: Run tests when present
+        run: pnpm run --if-present test
+
+      - name: Build frontend
+        run: pnpm run build
+
+  rust-quality:
+    name: Rust quality
+    needs: detect
+    if: needs.detect.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace --all-features
+
+      - name: Build workspace
+        run: cargo build --workspace --all-features
+
+  tauri-build:
+    name: Tauri build (${{ matrix.os }})
+    needs:
+      - detect
+      - node-quality
+      - rust-quality
+    if: >-
+      always() &&
+      needs.detect.outputs.tauri == 'true' &&
+      needs.node-quality.result == 'success' &&
+      needs.rust-quality.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            wget
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable package manager
+        shell: bash
+        run: |
+          corepack enable
+          corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: tauri-${{ matrix.os }}
+
+      - name: Compile Tauri application
+        run: pnpm run tauri:build -- --no-bundle
