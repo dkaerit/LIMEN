@@ -1,0 +1,9 @@
+.git
+.github
+**/dist
+**/node_modules
+**/target
+coverage
+pnpm-lock.yaml
+*.md
+LICENSE

@@ -12,6 +12,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = (
+    "LICENSE",
     "README.md",
     "SPEC.md",
     "ARCHITECTURE.md",
@@ -21,6 +22,9 @@ REQUIRED_FILES = (
     "CONTRIBUTING.md",
     "SECURITY.md",
     ".github/workflows/ci.yml",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "Cargo.toml",
 )
 
 TEXT_SUFFIXES = {
@@ -67,12 +71,28 @@ FORBIDDEN_SUFFIXES = {
 CONFLICT_MARKER = re.compile(r"^(<<<<<<<|=======|>>>>>>>)", re.MULTILINE)
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
+EXCLUDED_DIRECTORIES = {
+    ".cache",
+    ".git",
+    ".pnpm-store",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".turbo",
+    ".vite",
+    "__pycache__",
+    "coverage",
+    "dist",
+    "node_modules",
+    "target",
+}
+
 
 def repository_files() -> list[Path]:
     return sorted(
         path
         for path in ROOT.rglob("*")
-        if path.is_file() and ".git" not in path.relative_to(ROOT).parts
+        if path.is_file()
+        and not EXCLUDED_DIRECTORIES.intersection(path.relative_to(ROOT).parts)
     )
 
 
