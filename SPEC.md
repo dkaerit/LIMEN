@@ -1,7 +1,7 @@
 # LIMEN — Especificación de producto
 
 Estado: borrador 0.1
-Fase: definición, sin implementación
+Fase: implementación M1, prueba visual controller-first
 Plataforma inicial: Windows 11
 Plataforma objetivo posterior: SteamOS/Linux
 
@@ -277,4 +277,4 @@ El título se usa como caso de prueba; ni el juego, ni su arte comercial, ni BIO
 
 ## 11. Puerta de decisión actual
 
-**D-001 está resuelta:** LIMEN usará Rust + Tauri 2 + React/TypeScript. **D-008 también está resuelta:** el código propio comienza en un monorepo con varios procesos y paquetes. Antes del scaffolding deben cerrarse D-002 (protocolo local) y D-006 (licencia/modelo de distribución) en [DECISIONS.md](DECISIONS.md).
+**D-001, D-002, D-006 y D-008 están resueltas:** LIMEN usa Rust + Tauri 2 + React/TypeScript, JSON tipado sobre IPC local, Apache-2.0 y un monorepo con varios procesos y paquetes. M1 valida Home antes de construir Core.

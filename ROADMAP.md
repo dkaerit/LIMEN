@@ -14,7 +14,7 @@ Estrategia: demostrar una experiencia estrecha y excelente antes de ampliar sist
 
 ## M0 — Definición y decisión tecnológica
 
-Estado: **en curso**
+Estado: **completado — 2026-08-07**
 
 Entregables:
 
@@ -25,9 +25,9 @@ Entregables:
 - [x] `AGENTS.md`.
 - [x] Elegir **A — Rust/Tauri/React** en D-001.
 - [x] Elegir un monorepo con varios procesos y paquetes en D-008.
-- [ ] Decidir protocolo local inicial en D-002.
-- [ ] Acordar licencia y modelo de distribución del proyecto en D-006.
-- [ ] Inicializar estructura y toolchain de la opción elegida.
+- [x] Decidir protocolo local inicial en D-002.
+- [x] Acordar Apache-2.0 como licencia del código propio en D-006.
+- [x] Inicializar estructura y toolchain de la opción elegida.
 
 Salida:
 
@@ -35,6 +35,8 @@ Salida:
 - No quedan contradicciones entre especificación y arquitectura.
 
 ## M1 — UI-01: prueba visual controller-first
+
+Estado: **en curso**
 
 Objetivo: demostrar que el renderer elegido puede sentirse como una consola antes de construir runtimes.
 
@@ -76,6 +78,7 @@ Incluye:
 - Bridge falso que lanza un proceso de prueba controlado.
 - Reconexión después de reiniciar Home.
 - Persistencia mínima y logs estructurados.
+- Runtime Console mínima como cliente de solo lectura: salud de módulos, línea temporal de la sesión y eventos sanitizados reales del Core.
 
 Pruebas:
 
@@ -87,6 +90,7 @@ Pruebas:
 Salida:
 
 - Home puede cambiarse por un cliente CLI de prueba y la sesión sigue funcionando.
+- La Runtime Console puede observar la misma sesión simulada sin recibir privilegios de orquestación.
 
 ## M3 — PS2-01: auditoría del Bridge PCSX2
 

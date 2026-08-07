@@ -79,7 +79,7 @@ Input, Atlas y Vault son **capas lógicas**, pero no necesitan procesos propios 
 ```mermaid
 flowchart LR
     UI["React<br/>apps/home-ui"] -->|"invoke/eventos internos"| Host["limen-home<br/>Tauri host"]
-    Host <-->|"API v1 por named pipe<br/>propuesta D-002"| Core["limen-core"]
+    Host <-->|"API v1 por named pipe<br/>D-002"| Core["limen-core"]
     Core --> Modules["Session + Input + Atlas + Vault<br/>crates enlazados"]
     Core --> Bridge["Bridge PCSX2<br/>crate enlazado"]
     Bridge -->|"plan estructurado"| Core
@@ -243,9 +243,11 @@ Runtime Console es una herramienta de desarrollo que muestra:
 
 Nunca se abre automáticamente delante de un usuario normal.
 
+Su primera versión llega en M2, cuando puede observar una sesión simulada y eventos reales del Core. Evoluciona durante M3/M4 con diagnósticos del Bridge, pero permanece de solo lectura salvo comandos de diagnóstico explícitos y auditables.
+
 ## 5. Contrato local
 
-La decisión del transporte se documenta como **D-002**. Independientemente de ella:
+El transporte aceptado en **D-002** usa JSON UTF-8 con framing por longitud sobre named pipes en Windows y Unix domain sockets en Linux. Además:
 
 - El contrato tiene versión mayor (`v1`) y versiones de mensaje.
 - Hay comandos, consultas, snapshots y eventos.
