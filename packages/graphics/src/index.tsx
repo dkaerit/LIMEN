@@ -3,9 +3,41 @@ import { useEffect, useMemo, useRef } from "react";
 import { CatmullRomCurve3, Color, MathUtils, Vector3 } from "three";
 import type { Group, Mesh } from "three";
 
+export type GraphicsQualityProfile = "quality" | "balanced" | "performance";
+
 export interface AmbientSceneProps {
   motionEnabled?: boolean;
+  quality?: GraphicsQualityProfile;
 }
+
+const qualitySettings: Record<
+  GraphicsQualityProfile,
+  {
+    dpr: [number, number];
+    portalSegments: number;
+    trailSegments: number;
+    trailRadialSegments: number;
+  }
+> = {
+  quality: {
+    dpr: [0.9, 1.5],
+    portalSegments: 72,
+    trailSegments: 48,
+    trailRadialSegments: 6,
+  },
+  balanced: {
+    dpr: [0.7, 1.2],
+    portalSegments: 48,
+    trailSegments: 36,
+    trailRadialSegments: 5,
+  },
+  performance: {
+    dpr: [0.55, 1],
+    portalSegments: 32,
+    trailSegments: 24,
+    trailRadialSegments: 4,
+  },
+};
 
 interface FloatingShapeProps {
   motionEnabled: boolean;
@@ -61,9 +93,10 @@ function FloatingShape({
 
 interface PortalFrameProps {
   motionEnabled: boolean;
+  segments: number;
 }
 
-function PortalFrame({ motionEnabled }: PortalFrameProps) {
+function PortalFrame({ motionEnabled, segments }: PortalFrameProps) {
   const group = useRef<Group>(null);
 
   useFrame(({ clock }, delta) => {
@@ -85,7 +118,7 @@ function PortalFrame({ motionEnabled }: PortalFrameProps) {
         />
       </mesh>
       <mesh scale={1.08}>
-        <torusGeometry args={[1.45, 0.035, 8, 72]} />
+        <torusGeometry args={[1.45, 0.035, 8, segments]} />
         <meshBasicMaterial color="#84d5ff" transparent opacity={0.55} />
       </mesh>
     </group>
@@ -95,9 +128,13 @@ function PortalFrame({ motionEnabled }: PortalFrameProps) {
 function LightTrail({
   color,
   points,
+  tubularSegments,
+  radialSegments,
 }: {
   color: string;
   points: [number, number, number][];
+  tubularSegments: number;
+  radialSegments: number;
 }) {
   const curve = useMemo(
     () => new CatmullRomCurve3(points.map((point) => new Vector3(...point))),
@@ -106,7 +143,9 @@ function LightTrail({
 
   return (
     <mesh>
-      <tubeGeometry args={[curve, 48, 0.018, 6, false]} />
+      <tubeGeometry
+        args={[curve, tubularSegments, 0.018, radialSegments, false]}
+      />
       <meshBasicMaterial color={color} transparent opacity={0.72} />
     </mesh>
   );
@@ -155,8 +194,9 @@ function CameraRig({ motionEnabled }: { motionEnabled: boolean }) {
   return null;
 }
 
-function SpatialWorld({ motionEnabled }: Required<AmbientSceneProps>) {
+function SpatialWorld({ motionEnabled, quality }: Required<AmbientSceneProps>) {
   const floor = useRef<Mesh>(null);
+  const settings = qualitySettings[quality];
 
   useFrame(({ clock }) => {
     if (!motionEnabled || !floor.current) return;
@@ -185,7 +225,10 @@ function SpatialWorld({ motionEnabled }: Required<AmbientSceneProps>) {
       />
 
       <CameraRig motionEnabled={motionEnabled} />
-      <PortalFrame motionEnabled={motionEnabled} />
+      <PortalFrame
+        motionEnabled={motionEnabled}
+        segments={settings.portalSegments}
+      />
 
       <FloatingShape
         motionEnabled={motionEnabled}
@@ -217,23 +260,29 @@ function SpatialWorld({ motionEnabled }: Required<AmbientSceneProps>) {
         speed={0.5}
         color="#111b35"
       />
-      <FloatingShape
-        motionEnabled={motionEnabled}
-        position={[0.2, 2.9, -6]}
-        rotation={[0.6, 0.2, 0.65]}
-        scale={[0.75, 0.75, 0.75]}
-        speed={0.72}
-      />
-      <FloatingShape
-        motionEnabled={motionEnabled}
-        position={[-0.7, -0.6, -7]}
-        rotation={[0.2, 0.9, 0.15]}
-        scale={[0.42, 0.42, 0.42]}
-        speed={0.86}
-      />
+      {quality !== "performance" && (
+        <FloatingShape
+          motionEnabled={motionEnabled}
+          position={[0.2, 2.9, -6]}
+          rotation={[0.6, 0.2, 0.65]}
+          scale={[0.75, 0.75, 0.75]}
+          speed={0.72}
+        />
+      )}
+      {quality === "quality" && (
+        <FloatingShape
+          motionEnabled={motionEnabled}
+          position={[-0.7, -0.6, -7]}
+          rotation={[0.2, 0.9, 0.15]}
+          scale={[0.42, 0.42, 0.42]}
+          speed={0.86}
+        />
+      )}
 
       <LightTrail
         color="#43c8ff"
+        tubularSegments={settings.trailSegments}
+        radialSegments={settings.trailRadialSegments}
         points={[
           [-7, -0.7, -3],
           [-3, 0.4, -4],
@@ -243,6 +292,8 @@ function SpatialWorld({ motionEnabled }: Required<AmbientSceneProps>) {
       />
       <LightTrail
         color="#985cff"
+        tubularSegments={settings.trailSegments}
+        radialSegments={settings.trailRadialSegments}
         points={[
           [-5, 2.7, -7],
           [-1, 2, -5],
@@ -272,22 +323,27 @@ function SpatialWorld({ motionEnabled }: Required<AmbientSceneProps>) {
   );
 }
 
-export function AmbientScene({ motionEnabled = true }: AmbientSceneProps) {
+export function AmbientScene({
+  motionEnabled = true,
+  quality = "balanced",
+}: AmbientSceneProps) {
+  const settings = qualitySettings[quality];
+
   return (
-    <div className="ambient-scene" aria-hidden="true">
+    <div className="ambient-scene" data-quality={quality} aria-hidden="true">
       <div className="ambient-scene__fallback" />
       <Canvas
         className="ambient-scene__canvas"
         camera={{ fov: 47, near: 0.1, far: 40, position: [0, 0.2, 7.8] }}
-        dpr={[0.7, 1.35]}
+        dpr={settings.dpr}
         frameloop={motionEnabled ? "always" : "demand"}
         gl={{
           alpha: false,
-          antialias: true,
+          antialias: quality !== "performance",
           powerPreference: "high-performance",
         }}
       >
-        <SpatialWorld motionEnabled={motionEnabled} />
+        <SpatialWorld motionEnabled={motionEnabled} quality={quality} />
       </Canvas>
       <div className="ambient-scene__mist" />
       <div className="ambient-scene__vignette" />

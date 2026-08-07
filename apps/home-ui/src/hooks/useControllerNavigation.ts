@@ -8,11 +8,27 @@ const INITIAL_REPEAT_DELAY = 320;
 const REPEAT_INTERVAL = 105;
 const AXIS_THRESHOLD = 0.58;
 
-function pressed(gamepad: Gamepad, index: number): boolean {
+type ControllerSample = Pick<Gamepad, "axes" | "buttons">;
+
+export interface ControllerFrameState {
+  activeDirection: FocusDirection | null;
+  nextRepeatAt: number;
+  acceptWasPressed: boolean;
+  backWasPressed: boolean;
+}
+
+export const initialControllerFrameState: ControllerFrameState = {
+  activeDirection: null,
+  nextRepeatAt: 0,
+  acceptWasPressed: false,
+  backWasPressed: false,
+};
+
+function pressed(gamepad: ControllerSample, index: number): boolean {
   return gamepad.buttons[index]?.pressed ?? false;
 }
 
-function directionFor(gamepad: Gamepad): FocusDirection | null {
+function directionFor(gamepad: ControllerSample): FocusDirection | null {
   const horizontal = gamepad.axes[0] ?? 0;
   const vertical = gamepad.axes[1] ?? 0;
 
@@ -21,6 +37,50 @@ function directionFor(gamepad: Gamepad): FocusDirection | null {
   if (pressed(gamepad, 14) || horizontal < -AXIS_THRESHOLD) return "left";
   if (pressed(gamepad, 15) || horizontal > AXIS_THRESHOLD) return "right";
   return null;
+}
+
+export function controllerActionsForFrame(
+  gamepad: ControllerSample | null,
+  timestamp: number,
+  state: ControllerFrameState,
+): { actions: ControllerAction[]; state: ControllerFrameState } {
+  if (!gamepad) {
+    return {
+      actions: [],
+      state: { ...initialControllerFrameState },
+    };
+  }
+
+  const actions: ControllerAction[] = [];
+  const direction = directionFor(gamepad);
+  let activeDirection = state.activeDirection;
+  let nextRepeatAt = state.nextRepeatAt;
+
+  if (direction && direction !== activeDirection) {
+    activeDirection = direction;
+    nextRepeatAt = timestamp + INITIAL_REPEAT_DELAY;
+    actions.push(direction);
+  } else if (direction && timestamp >= nextRepeatAt) {
+    nextRepeatAt = timestamp + REPEAT_INTERVAL;
+    actions.push(direction);
+  } else if (!direction) {
+    activeDirection = null;
+  }
+
+  const acceptIsPressed = pressed(gamepad, 0);
+  const backIsPressed = pressed(gamepad, 1);
+  if (acceptIsPressed && !state.acceptWasPressed) actions.push("accept");
+  if (backIsPressed && !state.backWasPressed) actions.push("back");
+
+  return {
+    actions,
+    state: {
+      activeDirection,
+      nextRepeatAt,
+      acceptWasPressed: acceptIsPressed,
+      backWasPressed: backIsPressed,
+    },
+  };
 }
 
 export function useControllerNavigation(
@@ -35,10 +95,7 @@ export function useControllerNavigation(
 
   useEffect(() => {
     let animationFrame = 0;
-    let activeDirection: FocusDirection | null = null;
-    let nextRepeatAt = 0;
-    let acceptWasPressed = false;
-    let backWasPressed = false;
+    let inputState = { ...initialControllerFrameState };
     let connectionState = false;
 
     const updateConnection = (next: boolean) => {
@@ -54,31 +111,9 @@ export function useControllerNavigation(
           (candidate) => candidate?.connected,
         ) ?? null;
       updateConnection(Boolean(gamepad));
-
-      if (gamepad) {
-        const direction = directionFor(gamepad);
-        if (direction && direction !== activeDirection) {
-          activeDirection = direction;
-          nextRepeatAt = timestamp + INITIAL_REPEAT_DELAY;
-          callback.current(direction);
-        } else if (direction && timestamp >= nextRepeatAt) {
-          nextRepeatAt = timestamp + REPEAT_INTERVAL;
-          callback.current(direction);
-        } else if (!direction) {
-          activeDirection = null;
-        }
-
-        const acceptIsPressed = pressed(gamepad, 0);
-        const backIsPressed = pressed(gamepad, 1);
-        if (acceptIsPressed && !acceptWasPressed) callback.current("accept");
-        if (backIsPressed && !backWasPressed) callback.current("back");
-        acceptWasPressed = acceptIsPressed;
-        backWasPressed = backIsPressed;
-      } else {
-        activeDirection = null;
-        acceptWasPressed = false;
-        backWasPressed = false;
-      }
+      const frame = controllerActionsForFrame(gamepad, timestamp, inputState);
+      inputState = frame.state;
+      frame.actions.forEach((action) => callback.current(action));
 
       animationFrame = window.requestAnimationFrame(poll);
     };

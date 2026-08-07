@@ -6,14 +6,19 @@ LIMEN es un entorno universal de ejecución de videojuegos orientado a mando. Su
 
 ## Estado
 
-LIMEN está en **M1: prueba visual controller-first**. La pila inicial ya está decidida:
+LIMEN está en **M1: candidato de cierre técnico de la prueba visual
+controller-first**. La implementación está lista para la aceptación física en
+el dispositivo de referencia. La pila inicial ya está decidida:
 
 - Core y servicios nativos: Rust.
 - Home: Tauri 2 + React + TypeScript.
 - Presentación 3D: Three.js mediante React Three Fiber, con WebGL2 como baseline y fallback estático.
 - Organización: monorepo con varios procesos y paquetes.
 
-La primera Home ejecutable usa datos simulados y una escena 3D animada en tiempo real para validar composición, foco, mando y rendimiento antes de construir Core.
+La primera Home ejecutable usa 160 fichas simuladas y virtualizadas, foco
+espacial y una escena 3D animada en tiempo real con perfiles automáticos y
+fallback 2D. La medición local se puede iniciar desde Configuración antes de
+construir Core.
 
 ## Documentación principal
 

@@ -1,8 +1,10 @@
 import {
+  Component,
   lazy,
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,11 +25,43 @@ import {
   useControllerNavigation,
   type ControllerAction,
 } from "./hooks/useControllerNavigation";
+import {
+  resolveGraphicsProfile,
+  runHomeBenchmark,
+  type GraphicsPreference,
+  type HomeBenchmarkResult,
+  type ViewportMetrics,
+} from "./lib/performance";
+import { calculateVirtualGrid } from "./lib/virtualization";
 
 const AmbientScene = lazy(async () => {
   const graphics = await import("@limen/graphics");
   return { default: graphics.AmbientScene };
 });
+
+function SceneFallback() {
+  return (
+    <div className="ambient-scene ambient-scene--2d" aria-hidden="true">
+      <div className="ambient-scene__fallback" />
+      <div className="ambient-scene__vignette" />
+    </div>
+  );
+}
+
+class SceneErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    return this.state.failed ? <SceneFallback /> : this.props.children;
+  }
+}
 
 type ViewId =
   | "home"
@@ -38,6 +72,8 @@ type ViewId =
   | "add"
   | "settings"
   | "detail";
+
+type InputMethod = "gamepad" | "keyboard" | "pointer";
 
 interface NavItem {
   id: Exclude<ViewId, "detail">;
@@ -73,6 +109,17 @@ const libraryFilters: Array<"Todos" | GamePlatform> = [
   "ARCADE",
   "HANDHELD",
   "16-BIT",
+];
+
+const graphicsOptions: Array<{
+  id: GraphicsPreference;
+  label: string;
+}> = [
+  { id: "auto", label: "Auto" },
+  { id: "quality", label: "Calidad" },
+  { id: "balanced", label: "Equilibrado" },
+  { id: "performance", label: "Rendimiento" },
+  { id: "2d", label: "Solo 2D" },
 ];
 
 const communityProjects = [
@@ -159,9 +206,11 @@ function focusTargets(): FocusTarget[] {
 
 function elementForFocusId(focusId: string): HTMLElement | null {
   return (
-    focusableElements().find(
-      (element) => element.dataset.focusId === focusId,
-    ) ?? null
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "[data-focus-id]:not([disabled])",
+      ),
+    ].find((element) => element.dataset.focusId === focusId) ?? null
   );
 }
 
@@ -170,6 +219,43 @@ function gameColors(game: GameSummary): CSSProperties {
     "--game-accent": game.accent,
     "--game-accent-secondary": game.accentSecondary,
   } as CSSProperties;
+}
+
+function useViewportMetrics(): ViewportMetrics {
+  const [viewport, setViewport] = useState<ViewportMetrics>(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    devicePixelRatio: window.devicePixelRatio,
+  }));
+
+  useEffect(() => {
+    const update = () =>
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+      });
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return viewport;
+}
+
+function usePrefersReducedMotion(): boolean {
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener("change", update);
+    update();
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  return reducedMotion;
 }
 
 function Panel({
@@ -226,6 +312,116 @@ function GameCard({
         </span>
       </span>
     </FocusButton>
+  );
+}
+
+function VirtualizedLibraryGrid({
+  libraryGames,
+  focusedId,
+  onChooseGame,
+}: {
+  libraryGames: readonly GameSummary[];
+  focusedId: string;
+  onChooseGame: (game: GameSummary, focusId: string) => void;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [viewport, setViewport] = useState({
+    width: 1000,
+    height: 720,
+    scrollOffset: 0,
+  });
+  const focusedGameId = focusedId.startsWith("library-")
+    ? focusedId.slice("library-".length)
+    : "";
+  const pinnedIndex = libraryGames.findIndex(
+    (game) => game.id === focusedGameId,
+  );
+  const layout = useMemo(
+    () =>
+      calculateVirtualGrid({
+        itemCount: libraryGames.length,
+        width: viewport.width,
+        scrollOffset: viewport.scrollOffset,
+        viewportHeight: viewport.height,
+        pinnedIndex,
+      }),
+    [libraryGames.length, pinnedIndex, viewport],
+  );
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    const scrollRoot = grid?.closest<HTMLElement>(".view-scroll");
+    if (!grid || !scrollRoot) return;
+
+    const updateViewport = () => {
+      const nextViewport = {
+        width: grid.clientWidth,
+        height: scrollRoot.clientHeight,
+        scrollOffset: Math.max(0, scrollRoot.scrollTop - grid.offsetTop),
+      };
+      setViewport((current) =>
+        current.width === nextViewport.width &&
+        current.height === nextViewport.height &&
+        current.scrollOffset === nextViewport.scrollOffset
+          ? current
+          : nextViewport,
+      );
+    };
+
+    const resizeObserver = new ResizeObserver(updateViewport);
+    resizeObserver.observe(grid);
+    resizeObserver.observe(scrollRoot);
+    scrollRoot.addEventListener("scroll", updateViewport, { passive: true });
+    updateViewport();
+
+    return () => {
+      resizeObserver.disconnect();
+      scrollRoot.removeEventListener("scroll", updateViewport);
+    };
+  }, [libraryGames.length]);
+
+  return (
+    <div
+      ref={gridRef}
+      className="library-virtualizer"
+      style={{ height: `${layout.totalHeight}px` }}
+      role="list"
+      aria-label={`${libraryGames.length} juegos virtualizados`}
+      data-total-items={libraryGames.length}
+      data-rendered-rows={layout.visibleRows.length}
+      data-columns={layout.columns}
+    >
+      {layout.visibleRows.map((rowIndex) => {
+        const rowGames = libraryGames.slice(
+          rowIndex * layout.columns,
+          Math.min((rowIndex + 1) * layout.columns, libraryGames.length),
+        );
+
+        return (
+          <div
+            key={rowIndex}
+            className="library-virtual-row"
+            style={{
+              height: `${layout.rowHeight - layout.gap}px`,
+              gridTemplateColumns: `repeat(${layout.columns}, minmax(0, 1fr))`,
+              gap: `${layout.gap}px`,
+              transform: `translateY(${rowIndex * layout.rowHeight}px)`,
+            }}
+          >
+            {rowGames.map((game) => (
+              <div key={game.id} className="virtual-game-cell" role="listitem">
+                <GameCard
+                  game={game}
+                  focusId={`library-${game.id}`}
+                  focusedId={focusedId}
+                  onChoose={onChooseGame}
+                />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -437,17 +633,11 @@ function LibraryView({
         ))}
         <span className="library-count">{filteredGames.length} juegos</span>
       </div>
-      <div className="library-grid">
-        {filteredGames.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            focusId={`library-${game.id}`}
-            focusedId={focusedId}
-            onChoose={onChooseGame}
-          />
-        ))}
-      </div>
+      <VirtualizedLibraryGrid
+        libraryGames={filteredGames}
+        focusedId={focusedId}
+        onChooseGame={onChooseGame}
+      />
     </div>
   );
 }
@@ -839,15 +1029,29 @@ function SettingsView({
   focusedId,
   motionEnabled,
   highContrast,
+  graphicsPreference,
+  effectiveProfile,
+  viewportMetrics,
+  benchmark,
+  benchmarkRunning,
   onToggleMotion,
   onToggleContrast,
+  onSelectGraphics,
+  onRunBenchmark,
   onNotice,
 }: {
   focusedId: string;
   motionEnabled: boolean;
   highContrast: boolean;
+  graphicsPreference: GraphicsPreference;
+  effectiveProfile: HomeBenchmarkResult["profile"];
+  viewportMetrics: ViewportMetrics;
+  benchmark: HomeBenchmarkResult | null;
+  benchmarkRunning: boolean;
   onToggleMotion: () => void;
   onToggleContrast: () => void;
+  onSelectGraphics: (preference: GraphicsPreference) => void;
+  onRunBenchmark: () => void;
   onNotice: (message: string) => void;
 }) {
   return (
@@ -859,7 +1063,7 @@ function SettingsView({
         </div>
       </div>
       <div className="settings-grid">
-        <Panel className="settings-card">
+        <Panel className="settings-card settings-card--graphics">
           <div className="panel-heading">
             <div>
               <small>Gráficos</small>
@@ -867,7 +1071,34 @@ function SettingsView({
             </div>
             <Icon name="spark" />
           </div>
-          <p>Figuras WebGL en tiempo real con calidad adaptativa.</p>
+          <p>
+            Figuras WebGL en tiempo real con degradación automática según la
+            resolución renderizada.
+          </p>
+          <div
+            className="quality-options"
+            role="radiogroup"
+            aria-label="Calidad gráfica"
+          >
+            {graphicsOptions.map((option) => (
+              <FocusButton
+                key={option.id}
+                focusId={`quality-${option.id}`}
+                focused={focusedId === `quality-${option.id}`}
+                className={graphicsPreference === option.id ? "is-active" : ""}
+                role="radio"
+                aria-checked={graphicsPreference === option.id}
+                onClick={() => onSelectGraphics(option.id)}
+              >
+                {option.label}
+              </FocusButton>
+            ))}
+          </div>
+          <span className="quality-readout">
+            Perfil efectivo: <strong>{effectiveProfile}</strong> ·{" "}
+            {viewportMetrics.width}×{viewportMetrics.height} @{" "}
+            {viewportMetrics.devicePixelRatio.toFixed(2)}x
+          </span>
           <FocusButton
             focusId="setting-motion"
             focused={focusedId === "setting-motion"}
@@ -921,6 +1152,50 @@ function SettingsView({
             }
           >
             Ver controles
+          </FocusButton>
+        </Panel>
+        <Panel className="settings-card settings-card--benchmark">
+          <div className="panel-heading">
+            <div>
+              <small>Diagnóstico local</small>
+              <h2>Presupuesto de frame</h2>
+            </div>
+            <Icon name="spark" />
+          </div>
+          <p>
+            Mide diez segundos en este dispositivo. No envía telemetría ni
+            guarda identificadores de hardware.
+          </p>
+          <div className="benchmark-metrics" aria-live="polite">
+            <span>
+              <small>FPS medio</small>
+              <strong>
+                {benchmark ? benchmark.averageFps.toFixed(1) : "—"}
+              </strong>
+            </span>
+            <span>
+              <small>Frame P95</small>
+              <strong>
+                {benchmark ? `${benchmark.p95FrameMs.toFixed(1)} ms` : "—"}
+              </strong>
+            </span>
+            <span>
+              <small>Heap JS</small>
+              <strong>
+                {benchmark?.usedHeapMb
+                  ? `${benchmark.usedHeapMb.toFixed(1)} MB`
+                  : "N/D"}
+              </strong>
+            </span>
+          </div>
+          <FocusButton
+            focusId="setting-benchmark"
+            focused={focusedId === "setting-benchmark"}
+            className="secondary-action"
+            disabled={benchmarkRunning}
+            onClick={onRunBenchmark}
+          >
+            {benchmarkRunning ? "Midiendo 10 s…" : "Medir rendimiento"}
           </FocusButton>
         </Panel>
       </div>
@@ -1022,9 +1297,24 @@ export function App() {
   const [selectedSource, setSelectedSource] = useState("folder");
   const [motionEnabled, setMotionEnabled] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
+  const [graphicsPreference, setGraphicsPreference] =
+    useState<GraphicsPreference>("auto");
+  const [benchmark, setBenchmark] = useState<HomeBenchmarkResult | null>(null);
+  const [benchmarkRunning, setBenchmarkRunning] = useState(false);
+  const [inputMethod, setInputMethod] = useState<InputMethod>("keyboard");
   const previousView = useRef<ViewId>("home");
+  const returnFocus = useRef("play-featured");
+  const sawController = useRef(false);
+  const viewportMetrics = useViewportMetrics();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const featured = games[featuredIndex] ?? games[0]!;
+  const effectiveProfile = resolveGraphicsProfile(
+    graphicsPreference,
+    viewportMetrics,
+  );
+  const sceneEnabled =
+    motionEnabled && !prefersReducedMotion && effectiveProfile !== "2d";
   const showNotice = useCallback((message: string) => setNotice(message), []);
 
   const moveFocus = useCallback(
@@ -1048,7 +1338,7 @@ export function App() {
       setView(
         previousView.current === "detail" ? "home" : previousView.current,
       );
-      setFocusedId("nav-library");
+      setFocusedId(returnFocus.current);
       return;
     }
     if (view !== "home") {
@@ -1067,6 +1357,20 @@ export function App() {
   );
 
   const controllerConnected = useControllerNavigation(handleAction);
+
+  useEffect(() => {
+    if (controllerConnected) {
+      sawController.current = true;
+      setInputMethod("gamepad");
+      showNotice("Mando conectado · los glifos se han actualizado.");
+    } else if (sawController.current) {
+      sawController.current = false;
+      setInputMethod("keyboard");
+      showNotice(
+        "Mando desconectado · puedes continuar con teclado y volver a conectarlo.",
+      );
+    }
+  }, [controllerConnected, showNotice]);
 
   useEffect(() => {
     const keyToAction: Partial<Record<string, ControllerAction>> = {
@@ -1090,8 +1394,13 @@ export function App() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       const action = keyToAction[event.key];
-      if (!action || event.repeat) return;
+      if (
+        !action ||
+        (event.repeat && (action === "accept" || action === "back"))
+      )
+        return;
       event.preventDefault();
+      setInputMethod("keyboard");
       handleAction(action);
     };
 
@@ -1100,28 +1409,42 @@ export function App() {
   }, [handleAction]);
 
   useEffect(() => {
-    const element = elementForFocusId(focusedId);
-    if (!element) return;
-    element.focus({ preventScroll: true });
-    element.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "nearest",
-    });
+    let frame = 0;
+    let attempts = 0;
 
-    const rect = element.getBoundingClientRect();
-    window.dispatchEvent(
-      new CustomEvent("limen-focus-move", {
-        detail: {
-          x: ((rect.left + rect.width / 2) / window.innerWidth) * 2 - 1,
-          y: -(((rect.top + rect.height / 2) / window.innerHeight) * 2 - 1),
-        },
-      }),
-    );
+    const synchronizeFocus = () => {
+      const element = elementForFocusId(focusedId);
+      if (!element) {
+        attempts += 1;
+        if (attempts < 5)
+          frame = window.requestAnimationFrame(synchronizeFocus);
+        return;
+      }
 
-    const gameId = element.dataset.gameId;
-    const gameIndex = games.findIndex((game) => game.id === gameId);
-    if (gameIndex >= 0 && gameIndex < 5) setFeaturedIndex(gameIndex);
+      element.focus({ preventScroll: true });
+      element.scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+        inline: "nearest",
+      });
+
+      const rect = element.getBoundingClientRect();
+      window.dispatchEvent(
+        new CustomEvent("limen-focus-move", {
+          detail: {
+            x: ((rect.left + rect.width / 2) / window.innerWidth) * 2 - 1,
+            y: -(((rect.top + rect.height / 2) / window.innerHeight) * 2 - 1),
+          },
+        }),
+      );
+
+      const gameId = element.dataset.gameId;
+      const gameIndex = games.findIndex((game) => game.id === gameId);
+      if (gameIndex >= 0 && gameIndex < 5) setFeaturedIndex(gameIndex);
+    };
+
+    frame = window.requestAnimationFrame(synchronizeFocus);
+    return () => window.cancelAnimationFrame(frame);
   }, [focusedId, view]);
 
   useEffect(() => {
@@ -1138,11 +1461,25 @@ export function App() {
 
   const openGame = (game: GameSummary, focusId: string) => {
     previousView.current = view;
+    returnFocus.current = focusId;
     setSelectedGame(game);
     setView("detail");
     setFocusedId("detail-play");
     setNotice(null);
-    void focusId;
+  };
+
+  const runBenchmark = async () => {
+    if (benchmarkRunning) return;
+    setBenchmarkRunning(true);
+    const result = await runHomeBenchmark(
+      10_000,
+      sceneEnabled ? effectiveProfile : "2d",
+    );
+    setBenchmark(result);
+    setBenchmarkRunning(false);
+    showNotice(
+      `Medición completada: ${result.averageFps.toFixed(1)} FPS · P95 ${result.p95FrameMs.toFixed(1)} ms.`,
+    );
   };
 
   const openFeatured = () => openGame(featured, "details-featured");
@@ -1153,24 +1490,25 @@ export function App() {
 
   return (
     <div
-      className={`app-shell ${motionEnabled ? "" : "is-motion-reduced"} ${highContrast ? "is-high-contrast" : ""}`}
+      className={`app-shell ${sceneEnabled ? "" : "is-motion-reduced"} ${highContrast ? "is-high-contrast" : ""}`}
       data-view={view}
       onPointerDownCapture={(event) => {
+        setInputMethod("pointer");
         const element = (event.target as HTMLElement).closest<HTMLElement>(
           "[data-focus-id]",
         );
         if (element?.dataset.focusId) setFocusedId(element.dataset.focusId);
       }}
     >
-      <Suspense
-        fallback={
-          <div className="ambient-scene" aria-hidden="true">
-            <div className="ambient-scene__fallback" />
-          </div>
-        }
-      >
-        <AmbientScene motionEnabled={motionEnabled} />
-      </Suspense>
+      {sceneEnabled ? (
+        <SceneErrorBoundary>
+          <Suspense fallback={<SceneFallback />}>
+            <AmbientScene motionEnabled quality={effectiveProfile} />
+          </Suspense>
+        </SceneErrorBoundary>
+      ) : (
+        <SceneFallback />
+      )}
 
       <aside className="side-nav">
         <div className="brand" aria-label="LIMEN">
@@ -1331,8 +1669,15 @@ export function App() {
             focusedId={focusedId}
             motionEnabled={motionEnabled}
             highContrast={highContrast}
+            graphicsPreference={graphicsPreference}
+            effectiveProfile={sceneEnabled ? effectiveProfile : "2d"}
+            viewportMetrics={viewportMetrics}
+            benchmark={benchmark}
+            benchmarkRunning={benchmarkRunning}
             onToggleMotion={() => setMotionEnabled((enabled) => !enabled)}
             onToggleContrast={() => setHighContrast((enabled) => !enabled)}
+            onSelectGraphics={setGraphicsPreference}
+            onRunBenchmark={() => void runBenchmark()}
             onNotice={showNotice}
           />
         )}
@@ -1347,10 +1692,26 @@ export function App() {
       </main>
 
       <footer className="control-footer">
-        <ControllerHint glyph="A">Seleccionar</ControllerHint>
-        <ControllerHint glyph="B">Atrás</ControllerHint>
-        <ControllerHint glyph={<Icon name="menu" />}>Menú</ControllerHint>
-        <span>M1 · VISTA PREVIA</span>
+        {inputMethod === "gamepad" ? (
+          <>
+            <ControllerHint glyph="A">Seleccionar</ControllerHint>
+            <ControllerHint glyph="B">Atrás</ControllerHint>
+            <ControllerHint glyph={<Icon name="menu" />}>Menú</ControllerHint>
+          </>
+        ) : inputMethod === "pointer" ? (
+          <>
+            <ControllerHint glyph="●">Clic</ControllerHint>
+            <ControllerHint glyph="Esc">Atrás</ControllerHint>
+            <ControllerHint glyph="M">Menú</ControllerHint>
+          </>
+        ) : (
+          <>
+            <ControllerHint glyph="↵">Seleccionar</ControllerHint>
+            <ControllerHint glyph="Esc">Atrás</ControllerHint>
+            <ControllerHint glyph="M">Menú</ControllerHint>
+          </>
+        )}
+        <span>M1 · PERFIL {sceneEnabled ? effectiveProfile : "2D"}</span>
       </footer>
 
       {notice && (

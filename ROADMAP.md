@@ -36,7 +36,9 @@ Salida:
 
 ## M1 — UI-01: prueba visual controller-first
 
-Estado: **en curso**
+Estado: **candidato de cierre técnico** — implementación y validación de
+escritorio completadas; pendiente aceptación física 1080p y reconexión de mando
+en la ROG Xbox Ally de referencia.
 
 Objetivo: demostrar que el renderer elegido puede sentirse como una consola antes de construir runtimes.
 

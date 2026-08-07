@@ -19,6 +19,14 @@
   transition: opacity 300ms ease;
 }
 
+.ambient-scene--2d .ambient-scene__fallback {
+  opacity: 0.72;
+}
+
+.ambient-scene[data-quality="performance"] .ambient-scene__grain {
+  opacity: 0.012;
+}
+
 .ambient-scene__canvas {
   width: 100% !important;
   height: 100% !important;
