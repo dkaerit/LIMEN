@@ -201,7 +201,14 @@ fn api_error(error: CoreError) -> ApiError {
             "No se pudo iniciar o supervisar el runtime de prueba.",
             true,
         ),
-        CoreError::StatePoisoned | CoreError::InvalidIdentifier(_) => (
+        CoreError::StatePoisoned
+        | CoreError::StoredSequenceGap
+        | CoreError::StoredSessionOverlap
+        | CoreError::StoredGameMismatch
+        | CoreError::UnreconciledStoredSession
+        | CoreError::InvalidIdentifier(_)
+        | CoreError::InvalidStoredSession(_)
+        | CoreError::Persistence(_) => (
             ApiErrorCode::Internal,
             "Core no pudo completar la operación de forma segura.",
             true,
