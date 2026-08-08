@@ -1,0 +1,11 @@
+[package]
+name = "limen-contracts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Versioned local API contracts shared by LIMEN clients and Core."
+
+[dependencies]
+limen-domain = { path = "../domain" }

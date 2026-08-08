@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://limen.local/schemas/v1/limen-api.schema.json",
+  "title": "LIMEN local API v1",
+  "description": "Versioned request, response and event envelopes for the local-only LIMEN Core API.",
+  "$defs": {
+    "portable_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api_major", "message_version"],
+      "properties": {
+        "api_major": { "const": 1 },
+        "message_version": { "type": "integer", "minimum": 1, "maximum": 1 }
+      }
+    },
+    "session_state": {
+      "enum": [
+        "requested",
+        "validating",
+        "preparing",
+        "launching",
+        "running",
+        "stopping",
+        "finished",
+        "crashed",
+        "recovering_home",
+        "failed",
+        "cancelled",
+        "timed_out"
+      ]
+    },
+    "session_outcome": {
+      "enum": ["finished", "crashed", "failed", "cancelled", "timed_out"]
+    },
+    "session_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "session_id",
+        "game_id",
+        "state",
+        "outcome",
+        "last_sequence"
+      ],
+      "properties": {
+        "session_id": { "$ref": "#/$defs/portable_id" },
+        "game_id": { "$ref": "#/$defs/portable_id" },
+        "state": { "$ref": "#/$defs/session_state" },
+        "outcome": {
+          "oneOf": [{ "$ref": "#/$defs/session_outcome" }, { "type": "null" }]
+        },
+        "last_sequence": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "handshake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_major",
+        "message_version",
+        "client_id",
+        "client_name",
+        "capabilities",
+        "secret"
+      ],
+      "properties": {
+        "api_major": { "const": 1 },
+        "message_version": { "const": 1 },
+        "client_id": { "$ref": "#/$defs/portable_id" },
+        "client_name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "home_snapshot",
+              "session_commands",
+              "session_events",
+              "diagnostics_read"
+            ]
+          }
+        },
+        "secret": {
+          "type": "string",
+          "description": "Base64url-encoded 32-byte ephemeral secret; never logged.",
+          "minLength": 43,
+          "maxLength": 44
+        }
+      }
+    },
+    "request_payload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method"],
+          "properties": { "method": { "const": "system.get_info" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method"],
+          "properties": { "method": { "const": "library.get_home_snapshot" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "game_id"],
+          "properties": {
+            "method": { "const": "session.start" },
+            "game_id": { "$ref": "#/$defs/portable_id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "session_id"],
+          "properties": {
+            "method": { "enum": ["session.get", "session.stop"] },
+            "session_id": { "$ref": "#/$defs/portable_id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "after_sequence"],
+          "properties": {
+            "method": { "const": "events.subscribe" },
+            "after_sequence": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api_major", "message_version", "request_id", "payload"],
+      "properties": {
+        "api_major": { "const": 1 },
+        "message_version": { "const": 1 },
+        "request_id": { "$ref": "#/$defs/portable_id" },
+        "payload": { "$ref": "#/$defs/request_payload" }
+      }
+    },
+    "api_error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "user_message", "retryable"],
+      "properties": {
+        "code": {
+          "enum": [
+            "authentication_failed",
+            "incompatible_client",
+            "invalid_request",
+            "session_already_active",
+            "session_not_found",
+            "invalid_session_transition",
+            "runtime_crashed",
+            "runtime_timed_out",
+            "internal"
+          ]
+        },
+        "user_message": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "retryable": { "type": "boolean" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api_major", "message_version", "request_id", "ok"],
+      "properties": {
+        "api_major": { "const": 1 },
+        "message_version": { "const": 1 },
+        "request_id": { "$ref": "#/$defs/portable_id" },
+        "ok": { "type": "boolean" },
+        "result": { "type": ["object", "null"] },
+        "error": {
+          "oneOf": [{ "$ref": "#/$defs/api_error" }, { "type": "null" }]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "ok": { "const": true },
+            "error": { "type": "null" }
+          },
+          "required": ["result", "error"]
+        },
+        {
+          "properties": {
+            "ok": { "const": false },
+            "result": { "type": "null" }
+          },
+          "required": ["result", "error"]
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_major",
+        "message_version",
+        "sequence",
+        "session_id",
+        "event"
+      ],
+      "properties": {
+        "api_major": { "const": 1 },
+        "message_version": { "const": 1 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "session_id": {
+          "oneOf": [{ "$ref": "#/$defs/portable_id" }, { "type": "null" }]
+        },
+        "event": {
+          "type": "object",
+          "required": ["type"],
+          "properties": { "type": { "type": "string", "minLength": 1 } }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/handshake" },
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" },
+    { "$ref": "#/$defs/event" }
+  ]
+}
