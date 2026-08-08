@@ -1,0 +1,9 @@
+{
+  "api_major": 1,
+  "message_version": 1,
+  "client_id": "client-home-example",
+  "client_name": "LIMEN Home example",
+  "channel": "commands",
+  "capabilities": ["home_snapshot", "session_commands"],
+  "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+}

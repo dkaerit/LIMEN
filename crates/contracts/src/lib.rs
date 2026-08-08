@@ -31,6 +31,10 @@ impl EphemeralSecret {
             })
             == 0
     }
+
+    pub fn matches_secret(&self, candidate: &Self) -> bool {
+        self.matches(&candidate.0)
+    }
 }
 
 impl fmt::Debug for EphemeralSecret {
@@ -96,8 +100,15 @@ pub struct HandshakeRequest {
     pub compatibility: Compatibility,
     pub client_id: ClientId,
     pub client_name: String,
+    pub channel: ClientChannel,
     pub capabilities: Vec<ClientCapability>,
     pub secret: EphemeralSecret,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ClientChannel {
+    Commands,
+    Events,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

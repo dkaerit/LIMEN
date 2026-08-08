@@ -13,6 +13,7 @@ Este checkpoint materializa únicamente las fronteras necesarias:
 - `schemas/v1`: fuente neutral del contrato local.
 - `crates/domain`: identificadores y estados puros.
 - `crates/contracts`: envelopes, compatibilidad y secreto efímero redactado.
+- `crates/transport`: framing acotado, handshake y autorización por capacidad.
 - `crates/session`: máquina de estados determinista y eventos secuenciados.
 - `crates/bridge-sdk`: capacidades y `LaunchPlan` con ejecutable absoluto,
   `argv` y entorno separados.
@@ -54,10 +55,14 @@ identificador portable de juego placeholder.
 - Un proceso colgado o abandonado se termina y se recolecta.
 - Identificadores con traversal, separadores de ruta o tamaño excesivo se
   rechazan antes de entrar al dominio.
+- Un frame declara su longitud como `u32` little-endian y se rechaza antes de
+  reservar memoria si supera 1 MiB.
+- Cada conexión se autentica y declara canal de comandos o eventos. Un cliente
+  de diagnóstico puede observar, pero no iniciar ni detener sesiones.
 
 ## Siguiente checkpoint
 
-Todavía faltan el framing JSON real, transporte por named pipe/Unix socket,
-handshake autenticado, persistencia mínima y la Runtime Console de solo lectura.
-Esos adaptadores se implementarán sobre los contratos actuales; no se añadirá
-una dependencia de runtime sin aprobación explícita del propietario.
+Todavía faltan la codificación JSON tipada, el adaptador named pipe/Unix socket,
+persistencia mínima y la Runtime Console de solo lectura. Esos adaptadores se
+implementarán sobre los contratos actuales; no se añadirá una dependencia de
+runtime sin aprobación explícita del propietario.

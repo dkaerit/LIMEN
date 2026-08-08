@@ -1,0 +1,9 @@
+{
+  "api_major": 1,
+  "message_version": 1,
+  "client_id": "client-console-example",
+  "client_name": "Runtime Console example",
+  "channel": "events",
+  "capabilities": ["diagnostics_read"],
+  "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+}

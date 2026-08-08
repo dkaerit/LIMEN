@@ -9,9 +9,11 @@ Every message carries `api_major` and `message_version`. Requests also carry a
 portable `request_id`; session events carry a monotonically increasing
 `sequence` and their `session_id`.
 
-The first client message is a handshake containing the ephemeral secret passed
-through an operating-system channel. An incompatible major version, invalid
-secret, oversized frame or invalid payload fails closed before dispatch.
+The first client message on each connection is a handshake containing the
+ephemeral secret passed through an operating-system channel. It declares
+whether that connection carries commands or the dedicated event subscription.
+An incompatible major version, invalid secret, unauthorized capability,
+oversized frame or invalid payload fails closed before dispatch.
 
 `limen-api.schema.json` covers the M2 surface. The Rust types in
 `crates/contracts` must evolve atomically with this schema.
