@@ -4,9 +4,9 @@ Este archivo se aplica a todo el repositorio. Todo agente o colaborador debe lee
 
 ## 1. Estado actual
 
-El proyecto está en **M1 — UI-01: prueba visual controller-first**.
+El proyecto está en **M2 — CORE-01: contrato y sesión simulada**.
 
-**D-001, D-002, D-006 y D-008 están resueltas:** Rust + Tauri 2 + React/TypeScript, JSON tipado sobre IPC local, Apache-2.0 y un monorepo con varios procesos. M1 solo materializa Home, su host fino y paquetes visuales; Core y Runtime Console comienzan en M2.
+**D-001, D-002, D-006 y D-008 están resueltas:** Rust + Tauri 2 + React/TypeScript, JSON tipado sobre IPC local, Apache-2.0 y un monorepo con varios procesos. M1 materializó Home, su host fino y paquetes visuales. M2 materializa contratos, dominio, sesión, Bridge falso, Core y la Runtime Console mínima.
 
 ## 2. Objetivo inmutable
 

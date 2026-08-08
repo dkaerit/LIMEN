@@ -1,0 +1,15 @@
+[package]
+name = "limen-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Authoritative local LIMEN Core process."
+
+[dependencies]
+limen-bridge-fake = { path = "../../crates/bridge-fake" }
+limen-bridge-sdk = { path = "../../crates/bridge-sdk" }
+limen-contracts = { path = "../../crates/contracts" }
+limen-domain = { path = "../../crates/domain" }
+limen-session = { path = "../../crates/session" }

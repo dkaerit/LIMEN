@@ -6,9 +6,10 @@ LIMEN es un entorno universal de ejecución de videojuegos orientado a mando. Su
 
 ## Estado
 
-LIMEN está en **M1: candidato de cierre técnico de la prueba visual
-controller-first**. La implementación está lista para la aceptación física en
-el dispositivo de referencia. La pila inicial ya está decidida:
+LIMEN está en **M2: contrato y sesión simulada**. M1 ya está integrado; su
+medición física en el dispositivo portátil de referencia continúa registrada
+como evidencia pendiente, sin bloquear el trabajo autorizado en Core. La pila
+inicial ya está decidida:
 
 - Core y servicios nativos: Rust.
 - Home: Tauri 2 + React + TypeScript.
@@ -19,6 +20,10 @@ La primera Home ejecutable usa 160 fichas simuladas y virtualizadas, foco
 espacial y una escena 3D animada en tiempo real con perfiles automáticos y
 fallback 2D. La medición local se puede iniciar desde Configuración antes de
 construir Core.
+
+El primer checkpoint de M2 define la API local v1, la máquina de estados y un
+Bridge falso que supervisa un proceso de prueba sin shell. Consulta la
+[guía de M2](docs/testing/M2_CORE.md).
 
 ## Documentación principal
 

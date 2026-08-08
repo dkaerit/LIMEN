@@ -1,9 +1,12 @@
 [workspace]
 members = [
   "apps/home-host/src-tauri",
+  "crates/bridge-fake",
+  "crates/bridge-sdk",
   "crates/contracts",
   "crates/domain",
   "crates/session",
+  "services/core",
 ]
 resolver = "2"
 

@@ -1,7 +1,7 @@
 # LIMEN — Especificación de producto
 
 Estado: borrador 0.1
-Fase: implementación M1, prueba visual controller-first
+Fase: implementación M2, contrato y sesión simulada
 Plataforma inicial: Windows 11
 Plataforma objetivo posterior: SteamOS/Linux
 
