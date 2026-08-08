@@ -6,6 +6,7 @@ members = [
   "crates/contracts",
   "crates/domain",
   "crates/session",
+  "crates/transport",
   "services/core",
 ]
 resolver = "2"

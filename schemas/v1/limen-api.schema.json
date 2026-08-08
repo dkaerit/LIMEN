@@ -66,6 +66,7 @@
         "message_version",
         "client_id",
         "client_name",
+        "channel",
         "capabilities",
         "secret"
       ],
@@ -74,6 +75,7 @@
         "message_version": { "const": 1 },
         "client_id": { "$ref": "#/$defs/portable_id" },
         "client_name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "channel": { "enum": ["commands", "events"] },
         "capabilities": {
           "type": "array",
           "uniqueItems": true,

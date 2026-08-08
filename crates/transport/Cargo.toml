@@ -1,0 +1,12 @@
+[package]
+name = "limen-transport"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Framing and authorization boundary for the local LIMEN API."
+
+[dependencies]
+limen-contracts = { path = "../contracts" }
+limen-domain = { path = "../domain" }
