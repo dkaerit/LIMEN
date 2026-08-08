@@ -6,7 +6,7 @@ use std::io::{self, Read, Write};
 
 use limen_contracts::{
     ClientCapability, ClientChannel, CompatibilityError, EphemeralSecret, HandshakeRequest,
-    RequestPayload, MAX_FRAME_BYTES,
+    MAX_FRAME_BYTES, RequestPayload,
 };
 use limen_domain::ClientId;
 
@@ -62,7 +62,10 @@ impl fmt::Display for FrameError {
         match self {
             Self::Empty => formatter.write_str("local API frames cannot be empty"),
             Self::TooLarge { received, maximum } => {
-                write!(formatter, "frame has {received} bytes; maximum is {maximum}")
+                write!(
+                    formatter,
+                    "frame has {received} bytes; maximum is {maximum}"
+                )
             }
             Self::Io(_) => formatter.write_str("local API frame could not be transferred"),
         }
@@ -336,8 +339,7 @@ mod tests {
     #[test]
     fn diagnostics_client_can_observe_but_cannot_start_or_stop_sessions() {
         let secret = EphemeralSecret::new([7; EPHEMERAL_SECRET_BYTES]);
-        let policy =
-            HandshakePolicy::new(secret.clone(), vec![ClientCapability::DiagnosticsRead]);
+        let policy = HandshakePolicy::new(secret.clone(), vec![ClientCapability::DiagnosticsRead]);
         let commands = policy
             .authenticate(handshake(
                 secret,
@@ -367,8 +369,7 @@ mod tests {
     #[test]
     fn events_require_the_dedicated_channel() {
         let secret = EphemeralSecret::new([7; EPHEMERAL_SECRET_BYTES]);
-        let policy =
-            HandshakePolicy::new(secret.clone(), vec![ClientCapability::SessionEvents]);
+        let policy = HandshakePolicy::new(secret.clone(), vec![ClientCapability::SessionEvents]);
         let command_client = policy
             .authenticate(handshake(
                 secret.clone(),
