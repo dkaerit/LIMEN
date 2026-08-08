@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use limen_bridge_fake::{FakeBridge, FakeRuntimeMode};
 use limen_contracts::{
-    API_MAJOR, MESSAGE_VERSION, ApiError, ApiErrorCode, EventEnvelope, EventPayload, ModuleHealth,
+    API_MAJOR, ApiError, ApiErrorCode, EventEnvelope, EventPayload, MESSAGE_VERSION, ModuleHealth,
     ModuleStatus, RequestEnvelope, RequestPayload, ResponseEnvelope, ResponsePayload, SystemInfo,
 };
 use limen_domain::SessionId;
@@ -65,10 +65,7 @@ impl CoreApi {
         }
     }
 
-    pub fn event_envelopes_after(
-        &self,
-        sequence: u64,
-    ) -> Result<Vec<EventEnvelope>, CoreError> {
+    pub fn event_envelopes_after(&self, sequence: u64) -> Result<Vec<EventEnvelope>, CoreError> {
         self.core
             .events_after(sequence)
             .map(|events| events.into_iter().map(event_envelope).collect())
@@ -79,16 +76,11 @@ impl CoreApi {
             RequestPayload::SystemGetInfo => Ok(ResponsePayload::SystemInfo(SystemInfo {
                 core_version: env!("CARGO_PKG_VERSION").to_owned(),
                 api_major: API_MAJOR,
-                modules: vec![
-                    module("core"),
-                    module("transport"),
-                    module("bridge.fake"),
-                ],
+                modules: vec![module("core"), module("transport"), module("bridge.fake")],
             })),
-            RequestPayload::LibraryGetHomeSnapshot => self
-                .core
-                .home_snapshot()
-                .map(ResponsePayload::HomeSnapshot),
+            RequestPayload::LibraryGetHomeSnapshot => {
+                self.core.home_snapshot().map(ResponsePayload::HomeSnapshot)
+            }
             RequestPayload::SessionStart { game_id } => self.start_session(game_id),
             RequestPayload::SessionGet { session_id } => self
                 .core
@@ -103,10 +95,7 @@ impl CoreApi {
         }
     }
 
-    fn start_session(
-        &self,
-        game_id: limen_domain::GameId,
-    ) -> Result<ResponsePayload, CoreError> {
+    fn start_session(&self, game_id: limen_domain::GameId) -> Result<ResponsePayload, CoreError> {
         let session_id = self.core.start_session(game_id.clone())?;
         let signal = Arc::new(AtomicBool::new(false));
         {
@@ -158,9 +147,7 @@ impl CoreApi {
         Ok(ResponsePayload::Accepted)
     }
 
-    fn lock_cancellation(
-        &self,
-    ) -> Result<MutexGuard<'_, Option<ActiveCancellation>>, CoreError> {
+    fn lock_cancellation(&self) -> Result<MutexGuard<'_, Option<ActiveCancellation>>, CoreError> {
         self.cancellation
             .lock()
             .map_err(|_| CoreError::StatePoisoned)

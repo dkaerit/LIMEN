@@ -82,7 +82,10 @@ fn wait_for_state(core: &Core, expected: SessionState) {
         if state == Some(expected) {
             return;
         }
-        assert!(Instant::now() < deadline, "session did not reach {expected:?}");
+        assert!(
+            Instant::now() < deadline,
+            "session did not reach {expected:?}"
+        );
         thread::sleep(Duration::from_millis(5));
     }
 }
@@ -207,7 +210,11 @@ fn home_can_disconnect_reconnect_and_runtime_console_only_observes() {
             other => panic!("unexpected subscription response: {other:?}"),
         };
         let mut events = Vec::new();
-        while events.last().map_or(0, |event: &EventEnvelope| event.sequence) < current_sequence {
+        while events
+            .last()
+            .map_or(0, |event: &EventEnvelope| event.sequence)
+            < current_sequence
+        {
             events.push(connection.receive::<EventEnvelope>().unwrap());
         }
         events
