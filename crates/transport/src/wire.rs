@@ -83,9 +83,7 @@ impl Error for SecretGenerationError {
 mod tests {
     use std::io::Cursor;
 
-    use limen_contracts::{
-        API_MAJOR, MESSAGE_VERSION, RequestEnvelope, RequestPayload,
-    };
+    use limen_contracts::{API_MAJOR, MESSAGE_VERSION, RequestEnvelope, RequestPayload};
     use limen_domain::{GameId, RequestId};
 
     use super::*;
@@ -126,7 +124,8 @@ mod tests {
         for payload in [invalid_identifier.as_slice(), unknown_field.as_slice()] {
             let mut wire = Vec::new();
             FrameCodec::write(&mut wire, payload).unwrap();
-            let error = JsonFrameCodec::read::<RequestEnvelope>(&mut Cursor::new(wire)).unwrap_err();
+            let error =
+                JsonFrameCodec::read::<RequestEnvelope>(&mut Cursor::new(wire)).unwrap_err();
             assert!(matches!(error, JsonFrameError::InvalidJson(_)));
         }
     }

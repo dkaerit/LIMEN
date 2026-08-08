@@ -17,9 +17,7 @@ pub use ipc::{
     AuthenticatedIpcConnection, EndpointName, InvalidEndpointName, IpcConnection, IpcError,
     IpcServer,
 };
-pub use wire::{
-    JsonFrameCodec, JsonFrameError, SecretGenerationError, generate_ephemeral_secret,
-};
+pub use wire::{JsonFrameCodec, JsonFrameError, SecretGenerationError, generate_ephemeral_secret};
 
 pub struct FrameCodec;
 

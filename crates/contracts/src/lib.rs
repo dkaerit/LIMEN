@@ -327,14 +327,9 @@ pub enum EventPayload {
         current: SessionState,
     },
     #[serde(rename = "session.outcome_recorded")]
-    SessionOutcomeRecorded {
-        outcome: SessionOutcome,
-    },
+    SessionOutcomeRecorded { outcome: SessionOutcome },
     #[serde(rename = "module.health_changed")]
-    ModuleHealthChanged {
-        module: String,
-        state: ModuleHealth,
-    },
+    ModuleHealthChanged { module: String, state: ModuleHealth },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

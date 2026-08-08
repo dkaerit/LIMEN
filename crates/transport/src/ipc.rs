@@ -5,9 +5,7 @@ use std::io::{self, Write};
 use interprocess::local_socket::{
     GenericNamespaced, Listener, ListenerOptions, Stream, prelude::*,
 };
-use limen_contracts::{
-    CompatibilityError, HandshakeRequest, RequestEnvelope, ResponseEnvelope,
-};
+use limen_contracts::{CompatibilityError, HandshakeRequest, RequestEnvelope, ResponseEnvelope};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -25,9 +23,9 @@ impl EndpointName {
     pub fn parse(value: impl Into<String>) -> Result<Self, InvalidEndpointName> {
         let value = value.into();
         let valid_length = !value.is_empty() && value.len() <= MAX_ENDPOINT_BYTES;
-        let valid_characters = value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.')
-        });
+        let valid_characters = value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'));
 
         if !valid_length || !valid_characters {
             return Err(InvalidEndpointName);
@@ -220,9 +218,8 @@ mod tests {
     use std::thread;
 
     use limen_contracts::{
-        API_MAJOR, MESSAGE_VERSION, ClientCapability, ClientChannel, Compatibility,
-        EPHEMERAL_SECRET_BYTES, EphemeralSecret, HandshakeRequest, RequestPayload,
-        ResponsePayload,
+        API_MAJOR, ClientCapability, ClientChannel, Compatibility, EPHEMERAL_SECRET_BYTES,
+        EphemeralSecret, HandshakeRequest, MESSAGE_VERSION, RequestPayload, ResponsePayload,
     };
     use limen_domain::{ClientId, GameId, RequestId};
 
@@ -235,10 +232,7 @@ mod tests {
         EndpointName::parse(format!("limen-test-{}-{sequence}", std::process::id())).unwrap()
     }
 
-    fn handshake(
-        secret: EphemeralSecret,
-        capabilities: Vec<ClientCapability>,
-    ) -> HandshakeRequest {
+    fn handshake(secret: EphemeralSecret, capabilities: Vec<ClientCapability>) -> HandshakeRequest {
         HandshakeRequest {
             api_major: Compatibility::CURRENT.api_major,
             message_version: Compatibility::CURRENT.message_version,
