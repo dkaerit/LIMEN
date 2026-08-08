@@ -5,7 +5,9 @@ use std::io::{self, Write};
 use interprocess::local_socket::{
     GenericNamespaced, Listener, ListenerOptions, Stream, prelude::*,
 };
-use limen_contracts::{CompatibilityError, HandshakeRequest, RequestEnvelope, ResponseEnvelope};
+use limen_contracts::{
+    CompatibilityError, EventEnvelope, HandshakeRequest, RequestEnvelope, ResponseEnvelope,
+};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -137,6 +139,11 @@ impl AuthenticatedIpcConnection {
             return Err(IpcError::InvalidResponseInvariant);
         }
         self.connection.send(response)
+    }
+
+    pub fn send_event(&mut self, event: &EventEnvelope) -> Result<(), IpcError> {
+        event.compatibility().validate()?;
+        self.connection.send(event)
     }
 }
 

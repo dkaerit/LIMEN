@@ -1,6 +1,6 @@
 # M2 Core — contrato y sesión simulada
 
-Estado: primer checkpoint en implementación.
+Estado: contrato, transporte y adaptador de Core integrados; M2 sigue en curso.
 
 ## Objetivo
 
@@ -19,6 +19,12 @@ Este checkpoint materializa únicamente las fronteras necesarias:
   `argv` y entorno separados.
 - `crates/bridge-fake`: plan de lanzamiento del runtime falso de M2.
 - `services/core`: fuente de verdad, supervisor y ejecutables de simulación.
+
+El adaptador de `services/core` ya despacha la superficie mínima implementada
+(`system.get_info`, snapshot de Home, inicio/consulta/parada de sesión y replay
+de eventos) sobre el socket local autenticado. La ejecución simulada ocurre en
+un worker del Core: cerrar la conexión de Home no cancela ni transfiere la
+propiedad de la sesión.
 
 ## Ejecutar
 
@@ -63,6 +69,11 @@ identificador portable de juego placeholder.
   identificadores se vuelven a validar al entrar desde JSON.
 - El adaptador síncrono usa sockets locales: named pipes en Windows y Unix
   domain sockets en Linux, sin abrir un puerto TCP ni añadir un runtime async.
+- Home puede cerrar su conexión, volver a autenticarse y recuperar la misma
+  sesión activa mediante el snapshot autoritativo de Core.
+- Un endpoint de diagnóstico con secreto y capacidades propios puede reproducir
+  la línea temporal real, pero una solicitud `session.start` se rechaza antes
+  de llegar al dominio.
 
 ## Dependencias de runtime aprobadas
 
@@ -76,6 +87,7 @@ mínimo para el adaptador IPC de M2:
 
 ## Siguiente checkpoint
 
-Todavía faltan conectar el adaptador al proceso Core, persistencia mínima y la
-Runtime Console de solo lectura. No se añadirá otra dependencia de runtime sin
-aprobación explícita del propietario.
+Todavía faltan la persistencia mínima, ejecutar el servidor como ciclo de vida
+del binario Core y materializar la Runtime Console visual de solo lectura. No
+se añadirá otra dependencia de runtime sin aprobación explícita del
+propietario.
