@@ -59,10 +59,23 @@ identificador portable de juego placeholder.
   reservar memoria si supera 1 MiB.
 - Cada conexión se autentica y declara canal de comandos o eventos. Un cliente
   de diagnóstico puede observar, pero no iniciar ni detener sesiones.
+- Los tipos Rust se serializan con la misma forma plana que `schemas/v1`, y los
+  identificadores se vuelven a validar al entrar desde JSON.
+- El adaptador síncrono usa sockets locales: named pipes en Windows y Unix
+  domain sockets en Linux, sin abrir un puerto TCP ni añadir un runtime async.
+
+## Dependencias de runtime aprobadas
+
+El propietario autorizó explícitamente el 8 de agosto de 2026 este conjunto
+mínimo para el adaptador IPC de M2:
+
+- `serde 1.0.229` y `serde_json 1.0.151` (`MIT OR Apache-2.0`).
+- `interprocess 2.4.3`, sin la feature Tokio (`0BSD OR Apache-2.0`).
+- `getrandom 0.4.3` (`MIT OR Apache-2.0`).
+- `base64 0.23.1` (`MIT OR Apache-2.0`).
 
 ## Siguiente checkpoint
 
-Todavía faltan la codificación JSON tipada, el adaptador named pipe/Unix socket,
-persistencia mínima y la Runtime Console de solo lectura. Esos adaptadores se
-implementarán sobre los contratos actuales; no se añadirá una dependencia de
-runtime sin aprobación explícita del propietario.
+Todavía faltan conectar el adaptador al proceso Core, persistencia mínima y la
+Runtime Console de solo lectura. No se añadirá otra dependencia de runtime sin
+aprobación explícita del propietario.

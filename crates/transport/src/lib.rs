@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod ipc;
+mod wire;
+
 use std::error::Error;
 use std::fmt;
 use std::io::{self, Read, Write};
@@ -9,6 +12,14 @@ use limen_contracts::{
     MAX_FRAME_BYTES, RequestPayload,
 };
 use limen_domain::ClientId;
+
+pub use ipc::{
+    AuthenticatedIpcConnection, EndpointName, InvalidEndpointName, IpcConnection, IpcError,
+    IpcServer,
+};
+pub use wire::{
+    JsonFrameCodec, JsonFrameError, SecretGenerationError, generate_ephemeral_secret,
+};
 
 pub struct FrameCodec;
 
@@ -112,7 +123,7 @@ impl HandshakePolicy {
             return Err(HandshakeError::AuthenticationFailed);
         }
         request
-            .compatibility
+            .compatibility()
             .validate()
             .map_err(HandshakeError::IncompatibleClient)?;
 
@@ -269,7 +280,8 @@ mod tests {
         capabilities: Vec<ClientCapability>,
     ) -> HandshakeRequest {
         HandshakeRequest {
-            compatibility: Compatibility::CURRENT,
+            api_major: Compatibility::CURRENT.api_major,
+            message_version: Compatibility::CURRENT.message_version,
             client_id: ClientId::parse("client-test-001").unwrap(),
             client_name: "LIMEN test client".to_owned(),
             channel,
