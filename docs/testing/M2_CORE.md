@@ -26,6 +26,13 @@ de eventos) sobre el socket local autenticado. La ejecución simulada ocurre en
 un worker del Core: cerrar la conexión de Home no cancela ni transfiere la
 propiedad de la sesión.
 
+La persistencia mínima usa el puerto `SessionEventStore`. Su adaptador local
+escribe `session-events-v1.jsonl` únicamente bajo una raíz absoluta controlada
+por LIMEN. Cada transición se sincroniza en disco antes de publicarse en el
+snapshot; al reiniciar, Core reconstruye la última sesión y continúa la
+secuencia global. Un diario truncado, con gaps, solapamientos o una sesión no
+reconciliada falla cerrado en lugar de inventar estado.
+
 ## Ejecutar
 
 Requiere Rust estable 1.85 o posterior:
@@ -74,6 +81,11 @@ identificador portable de juego placeholder.
 - Un endpoint de diagnóstico con secreto y capacidades propios puede reproducir
   la línea temporal real, pero una solicitud `session.start` se rechaza antes
   de llegar al dominio.
+- Una sesión finalizada se reconstruye desde el diario después de crear una
+  nueva instancia de Core; la siguiente sesión conserva IDs y secuencias
+  monotónicas.
+- La raíz de persistencia debe ser absoluta, el nombre del diario es fijo y se
+  rechazan enlaces simbólicos, contenido truncado y versiones desconocidas.
 
 ## Dependencias de runtime aprobadas
 
@@ -87,7 +99,7 @@ mínimo para el adaptador IPC de M2:
 
 ## Siguiente checkpoint
 
-Todavía faltan la persistencia mínima, ejecutar el servidor como ciclo de vida
-del binario Core y materializar la Runtime Console visual de solo lectura. No
-se añadirá otra dependencia de runtime sin aprobación explícita del
-propietario.
+Todavía faltan ejecutar el servidor como ciclo de vida del binario Core,
+reconciliar de forma segura una sesión que hubiera quedado no terminal y
+materializar la Runtime Console visual de solo lectura. No se añadirá otra
+dependencia de runtime sin aprobación explícita del propietario.

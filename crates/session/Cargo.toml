@@ -9,3 +9,4 @@ description = "Deterministic session state machine for LIMEN Core."
 
 [dependencies]
 limen-domain = { path = "../domain" }
+serde.workspace = true

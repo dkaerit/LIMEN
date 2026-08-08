@@ -4,8 +4,10 @@ use std::error::Error;
 use std::fmt;
 
 use limen_domain::{GameId, SessionId, SessionOutcome, SessionState};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionEvent {
     pub sequence: u64,
     pub session_id: SessionId,
@@ -79,6 +81,26 @@ impl SessionMachine {
             outcome: self.outcome,
         })
     }
+
+    pub fn restore_event(&mut self, event: &SessionEvent) -> Result<(), RestoreError> {
+        let expected_sequence = self.sequence.saturating_add(1);
+        if event.session_id != self.session_id
+            || event.previous != self.state
+            || event.sequence != expected_sequence
+        {
+            return Err(RestoreError::EventMismatch);
+        }
+
+        let mut candidate = self.clone();
+        let restored = candidate
+            .transition(event.current)
+            .map_err(RestoreError::InvalidTransition)?;
+        if restored != *event {
+            return Err(RestoreError::EventMismatch);
+        }
+        *self = candidate;
+        Ok(())
+    }
 }
 
 pub const fn can_transition(current: SessionState, next: SessionState) -> bool {
@@ -138,6 +160,32 @@ impl fmt::Display for TransitionError {
 }
 
 impl Error for TransitionError {}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RestoreError {
+    EventMismatch,
+    InvalidTransition(TransitionError),
+}
+
+impl fmt::Display for RestoreError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EventMismatch => {
+                formatter.write_str("stored session event does not match prior state")
+            }
+            Self::InvalidTransition(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for RestoreError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::InvalidTransition(error) => Some(error),
+            Self::EventMismatch => None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -210,5 +258,30 @@ mod tests {
         assert_eq!(error.current, SessionState::Requested);
         assert_eq!(machine.state(), SessionState::Requested);
         assert_eq!(machine.sequence(), 0);
+    }
+
+    #[test]
+    fn stored_events_rebuild_the_same_machine_and_reject_gaps() {
+        let mut original = machine();
+        let events = [
+            original.transition(SessionState::Validating).unwrap(),
+            original.transition(SessionState::Preparing).unwrap(),
+        ];
+        let mut restored = machine();
+        for event in &events {
+            restored.restore_event(event).unwrap();
+        }
+
+        assert_eq!(restored, original);
+
+        let mut invalid = events[1].clone();
+        invalid.sequence += 1;
+        let mut unchanged = machine();
+        let before = unchanged.clone();
+        assert_eq!(
+            unchanged.restore_event(&invalid).unwrap_err(),
+            RestoreError::EventMismatch
+        );
+        assert_eq!(unchanged, before);
     }
 }

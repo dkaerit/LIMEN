@@ -14,3 +14,5 @@ limen-contracts = { path = "../../crates/contracts" }
 limen-domain = { path = "../../crates/domain" }
 limen-session = { path = "../../crates/session" }
 limen-transport = { path = "../../crates/transport" }
+serde.workspace = true
+serde_json.workspace = true
