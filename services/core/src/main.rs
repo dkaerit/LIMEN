@@ -34,7 +34,7 @@ fn run() -> Result<(), &'static str> {
 
     let executable = fake_runtime_path().map_err(|_| "CORE_RUNTIME_PATH")?;
     let bridge = FakeBridge::new(executable, mode);
-    let mut core = Core::default();
+    let core = Core::default();
     let timeout = if mode == FakeRuntimeMode::Hang {
         Duration::from_millis(100)
     } else {

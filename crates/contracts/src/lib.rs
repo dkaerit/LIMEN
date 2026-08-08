@@ -3,7 +3,10 @@
 use std::error::Error;
 use std::fmt;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
 use limen_domain::{ClientId, GameId, RequestId, SessionId, SessionOutcome, SessionState};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub const API_MAJOR: u16 = 1;
 pub const MESSAGE_VERSION: u16 = 1;
@@ -43,7 +46,37 @@ impl fmt::Debug for EphemeralSecret {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+impl Serialize for EphemeralSecret {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&URL_SAFE_NO_PAD.encode(self.0))
+    }
+}
+
+impl<'de> Deserialize<'de> for EphemeralSecret {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let encoded = String::deserialize(deserializer)?;
+        let decoded = URL_SAFE_NO_PAD
+            .decode(encoded.as_bytes())
+            .or_else(|_| URL_SAFE.decode(encoded.as_bytes()))
+            .map_err(serde::de::Error::custom)?;
+        let bytes = decoded.try_into().map_err(|decoded: Vec<u8>| {
+            serde::de::Error::custom(format_args!(
+                "ephemeral secret decoded to {} bytes; expected {EPHEMERAL_SECRET_BYTES}",
+                decoded.len()
+            ))
+        })?;
+        Ok(Self::new(bytes))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Compatibility {
     pub api_major: u16,
     pub message_version: u16,
@@ -95,9 +128,11 @@ impl fmt::Display for CompatibilityError {
 
 impl Error for CompatibilityError {}
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct HandshakeRequest {
-    pub compatibility: Compatibility,
+    pub api_major: u16,
+    pub message_version: u16,
     pub client_id: ClientId,
     pub client_name: String,
     pub channel: ClientChannel,
@@ -105,13 +140,24 @@ pub struct HandshakeRequest {
     pub secret: EphemeralSecret,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+impl HandshakeRequest {
+    pub const fn compatibility(&self) -> Compatibility {
+        Compatibility {
+            api_major: self.api_major,
+            message_version: self.message_version,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ClientChannel {
     Commands,
     Events,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ClientCapability {
     HomeSnapshot,
     SessionCommands,
@@ -119,67 +165,131 @@ pub enum ClientCapability {
     DiagnosticsRead,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct RequestEnvelope {
-    pub compatibility: Compatibility,
+    pub api_major: u16,
+    pub message_version: u16,
     pub request_id: RequestId,
     pub payload: RequestPayload,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl RequestEnvelope {
+    pub const fn compatibility(&self) -> Compatibility {
+        Compatibility {
+            api_major: self.api_major,
+            message_version: self.message_version,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, tag = "method")]
 pub enum RequestPayload {
+    #[serde(rename = "system.get_info")]
     SystemGetInfo,
+    #[serde(rename = "library.get_home_snapshot")]
     LibraryGetHomeSnapshot,
+    #[serde(rename = "session.start")]
     SessionStart { game_id: GameId },
+    #[serde(rename = "session.get")]
     SessionGet { session_id: SessionId },
+    #[serde(rename = "session.stop")]
     SessionStop { session_id: SessionId },
+    #[serde(rename = "events.subscribe")]
     EventsSubscribe { after_sequence: u64 },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ResponseEnvelope {
-    pub compatibility: Compatibility,
+    pub api_major: u16,
+    pub message_version: u16,
     pub request_id: RequestId,
-    pub payload: Result<ResponsePayload, ApiError>,
+    pub ok: bool,
+    pub result: Option<ResponsePayload>,
+    pub error: Option<ApiError>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl ResponseEnvelope {
+    pub fn success(request_id: RequestId, result: ResponsePayload) -> Self {
+        Self {
+            api_major: API_MAJOR,
+            message_version: MESSAGE_VERSION,
+            request_id,
+            ok: true,
+            result: Some(result),
+            error: None,
+        }
+    }
+
+    pub fn failure(request_id: RequestId, error: ApiError) -> Self {
+        Self {
+            api_major: API_MAJOR,
+            message_version: MESSAGE_VERSION,
+            request_id,
+            ok: false,
+            result: None,
+            error: Some(error),
+        }
+    }
+
+    pub const fn is_valid(&self) -> bool {
+        matches!(
+            (self.ok, self.result.is_some(), self.error.is_some()),
+            (true, true, false) | (false, false, true)
+        )
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(content = "data", tag = "type")]
 pub enum ResponsePayload {
+    #[serde(rename = "system.info")]
     SystemInfo(SystemInfo),
+    #[serde(rename = "home.snapshot")]
     HomeSnapshot(HomeSnapshot),
+    #[serde(rename = "session.snapshot")]
     Session(SessionSnapshot),
+    #[serde(rename = "events.subscribed")]
     EventsSubscribed { current_sequence: u64 },
+    #[serde(rename = "accepted")]
     Accepted,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SystemInfo {
     pub core_version: String,
     pub api_major: u16,
     pub modules: Vec<ModuleStatus>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ModuleStatus {
     pub module: String,
     pub state: ModuleHealth,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ModuleHealth {
     Ready,
     Degraded,
     Unavailable,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct HomeSnapshot {
     pub selected_game_id: Option<GameId>,
     pub active_session: Option<SessionSnapshot>,
     pub last_event_sequence: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionSnapshot {
     pub session_id: SessionId,
     pub game_id: GameId,
@@ -188,37 +298,50 @@ pub struct SessionSnapshot {
     pub last_sequence: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct EventEnvelope {
-    pub compatibility: Compatibility,
+    pub api_major: u16,
+    pub message_version: u16,
     pub sequence: u64,
     pub session_id: Option<SessionId>,
+    #[serde(rename = "event")]
     pub payload: EventPayload,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl EventEnvelope {
+    pub const fn compatibility(&self) -> Compatibility {
+        Compatibility {
+            api_major: self.api_major,
+            message_version: self.message_version,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, tag = "type")]
 pub enum EventPayload {
+    #[serde(rename = "session.state_changed")]
     SessionStateChanged {
         previous: SessionState,
         current: SessionState,
     },
-    SessionOutcomeRecorded {
-        outcome: SessionOutcome,
-    },
-    ModuleHealthChanged {
-        module: String,
-        state: ModuleHealth,
-    },
+    #[serde(rename = "session.outcome_recorded")]
+    SessionOutcomeRecorded { outcome: SessionOutcome },
+    #[serde(rename = "module.health_changed")]
+    ModuleHealthChanged { module: String, state: ModuleHealth },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ApiError {
     pub code: ApiErrorCode,
     pub user_message: String,
     pub retryable: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ApiErrorCode {
     AuthenticationFailed,
     IncompatibleClient,

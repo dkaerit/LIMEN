@@ -25,12 +25,16 @@ pub struct SessionMachine {
 
 impl SessionMachine {
     pub fn new(session_id: SessionId, game_id: GameId) -> Self {
+        Self::new_at(session_id, game_id, 0)
+    }
+
+    pub fn new_at(session_id: SessionId, game_id: GameId, sequence: u64) -> Self {
         Self {
             session_id,
             game_id,
             state: SessionState::Requested,
             outcome: None,
-            sequence: 0,
+            sequence,
         }
     }
 

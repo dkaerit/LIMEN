@@ -18,7 +18,7 @@ fn game_id() -> GameId {
 #[test]
 fn normal_exit_recovers_home_and_a_new_client_observes_the_same_snapshot() {
     let bridge = FakeBridge::new(fake_runtime(), FakeRuntimeMode::Normal);
-    let mut core = Core::default();
+    let core = Core::default();
     let result = core
         .run_session(
             &bridge,
@@ -28,7 +28,7 @@ fn normal_exit_recovers_home_and_a_new_client_observes_the_same_snapshot() {
         )
         .unwrap();
 
-    let reconnected_home = core.home_snapshot();
+    let reconnected_home = core.home_snapshot().unwrap();
     assert_eq!(result.state, SessionState::RecoveringHome);
     assert_eq!(result.outcome, Some(SessionOutcome::Finished));
     assert_eq!(reconnected_home.active_session, Some(result));
@@ -59,7 +59,7 @@ fn crash_timeout_and_cancellation_have_distinct_outcomes() {
 
     for (mode, timeout, cancel_later, expected) in scenarios {
         let bridge = FakeBridge::new(fake_runtime(), mode);
-        let mut core = Core::default();
+        let core = Core::default();
         let cancelled = Arc::new(AtomicBool::new(false));
 
         if cancel_later {
@@ -79,7 +79,7 @@ fn crash_timeout_and_cancellation_have_distinct_outcomes() {
 
 #[test]
 fn a_second_session_is_rejected_while_the_first_is_active() {
-    let mut core = Core::default();
+    let core = Core::default();
     core.start_session(game_id()).unwrap();
     let error = core.start_session(game_id()).unwrap_err();
 
@@ -89,7 +89,7 @@ fn a_second_session_is_rejected_while_the_first_is_active() {
 #[test]
 fn event_replay_is_monotonic_and_can_resume_after_a_known_sequence() {
     let bridge = FakeBridge::new(fake_runtime(), FakeRuntimeMode::Normal);
-    let mut core = Core::default();
+    let core = Core::default();
     let result = core
         .run_session(
             &bridge,
@@ -98,7 +98,7 @@ fn event_replay_is_monotonic_and_can_resume_after_a_known_sequence() {
             &AtomicBool::new(false),
         )
         .unwrap();
-    let replay = core.events_after(3);
+    let replay = core.events_after(3).unwrap();
 
     assert!(!replay.is_empty());
     assert!(replay.iter().all(|event| event.sequence > 3));

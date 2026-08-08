@@ -8,4 +8,6 @@ repository.workspace = true
 description = "Versioned local API contracts shared by LIMEN clients and Core."
 
 [dependencies]
+base64.workspace = true
 limen-domain = { path = "../domain" }
+serde.workspace = true

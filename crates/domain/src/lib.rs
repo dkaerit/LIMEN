@@ -3,6 +3,8 @@
 use std::error::Error;
 use std::fmt;
 
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 const MAX_IDENTIFIER_BYTES: usize = 128;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -34,6 +36,25 @@ impl fmt::Display for Identifier {
     }
 }
 
+impl Serialize for Identifier {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for Identifier {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        Self::parse(value).map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct InvalidIdentifier;
 
@@ -47,7 +68,8 @@ impl Error for InvalidIdentifier {}
 
 macro_rules! domain_id {
     ($name:ident) => {
-        #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+        #[serde(transparent)]
         pub struct $name(Identifier);
 
         impl $name {
@@ -73,7 +95,8 @@ domain_id!(GameId);
 domain_id!(RequestId);
 domain_id!(SessionId);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SessionState {
     Requested,
     Validating,
@@ -115,7 +138,8 @@ impl SessionState {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SessionOutcome {
     Finished,
     Crashed,

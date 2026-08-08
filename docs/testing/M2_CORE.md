@@ -1,6 +1,6 @@
 # M2 Core — contrato y sesión simulada
 
-Estado: primer checkpoint en implementación.
+Estado: contrato, transporte y adaptador de Core integrados; M2 sigue en curso.
 
 ## Objetivo
 
@@ -19,6 +19,12 @@ Este checkpoint materializa únicamente las fronteras necesarias:
   `argv` y entorno separados.
 - `crates/bridge-fake`: plan de lanzamiento del runtime falso de M2.
 - `services/core`: fuente de verdad, supervisor y ejecutables de simulación.
+
+El adaptador de `services/core` ya despacha la superficie mínima implementada
+(`system.get_info`, snapshot de Home, inicio/consulta/parada de sesión y replay
+de eventos) sobre el socket local autenticado. La ejecución simulada ocurre en
+un worker del Core: cerrar la conexión de Home no cancela ni transfiere la
+propiedad de la sesión.
 
 ## Ejecutar
 
@@ -59,10 +65,29 @@ identificador portable de juego placeholder.
   reservar memoria si supera 1 MiB.
 - Cada conexión se autentica y declara canal de comandos o eventos. Un cliente
   de diagnóstico puede observar, pero no iniciar ni detener sesiones.
+- Los tipos Rust se serializan con la misma forma plana que `schemas/v1`, y los
+  identificadores se vuelven a validar al entrar desde JSON.
+- El adaptador síncrono usa sockets locales: named pipes en Windows y Unix
+  domain sockets en Linux, sin abrir un puerto TCP ni añadir un runtime async.
+- Home puede cerrar su conexión, volver a autenticarse y recuperar la misma
+  sesión activa mediante el snapshot autoritativo de Core.
+- Un endpoint de diagnóstico con secreto y capacidades propios puede reproducir
+  la línea temporal real, pero una solicitud `session.start` se rechaza antes
+  de llegar al dominio.
+
+## Dependencias de runtime aprobadas
+
+El propietario autorizó explícitamente el 8 de agosto de 2026 este conjunto
+mínimo para el adaptador IPC de M2:
+
+- `serde 1.0.229` y `serde_json 1.0.151` (`MIT OR Apache-2.0`).
+- `interprocess 2.4.3`, sin la feature Tokio (`0BSD OR Apache-2.0`).
+- `getrandom 0.4.3` (`MIT OR Apache-2.0`).
+- `base64 0.23.1` (`MIT OR Apache-2.0`).
 
 ## Siguiente checkpoint
 
-Todavía faltan la codificación JSON tipada, el adaptador named pipe/Unix socket,
-persistencia mínima y la Runtime Console de solo lectura. Esos adaptadores se
-implementarán sobre los contratos actuales; no se añadirá una dependencia de
-runtime sin aprobación explícita del propietario.
+Todavía faltan la persistencia mínima, ejecutar el servidor como ciclo de vida
+del binario Core y materializar la Runtime Console visual de solo lectura. No
+se añadirá otra dependencia de runtime sin aprobación explícita del
+propietario.

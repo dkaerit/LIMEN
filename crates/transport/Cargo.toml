@@ -8,5 +8,9 @@ repository.workspace = true
 description = "Framing and authorization boundary for the local LIMEN API."
 
 [dependencies]
+getrandom.workspace = true
+interprocess.workspace = true
 limen-contracts = { path = "../contracts" }
 limen-domain = { path = "../domain" }
+serde.workspace = true
+serde_json.workspace = true
