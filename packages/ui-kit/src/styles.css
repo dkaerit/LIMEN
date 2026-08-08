@@ -1,0 +1,67 @@
+.focus-surface {
+  --focus-color: #71c8ff;
+  border: 1px solid transparent;
+  outline: 0;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.focus-surface.is-focused {
+  border-color: color-mix(in srgb, var(--focus-color) 88%, white 12%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--focus-color) 55%, transparent),
+    0 0 24px color-mix(in srgb, var(--focus-color) 52%, transparent),
+    inset 0 0 20px color-mix(in srgb, var(--focus-color) 16%, transparent);
+  transform: translateY(-2px) scale(1.012);
+}
+
+.platform-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0 0.62rem;
+  border: 1px solid rgba(196, 222, 255, 0.65);
+  border-radius: 0.38rem;
+  color: #eaf5ff;
+  background: rgba(7, 14, 29, 0.58);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.controller-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+  color: rgba(232, 241, 255, 0.76);
+  font-size: 0.84rem;
+}
+
+.controller-glyph {
+  display: grid;
+  width: auto;
+  min-width: 1.68rem;
+  height: 1.68rem;
+  place-items: center;
+  padding: 0 0.3rem;
+  border: 1px solid rgba(148, 187, 235, 0.38);
+  border-radius: 999px;
+  color: #f2f8ff;
+  background: rgba(35, 54, 93, 0.72);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-surface {
+    transition: none;
+  }
+
+  .focus-surface.is-focused {
+    transform: none;
+  }
+}

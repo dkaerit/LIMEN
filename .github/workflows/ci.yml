@@ -25,7 +25,7 @@ jobs:
       tauri: ${{ steps.detect.outputs.tauri }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Detect manifests
         id: detect
@@ -55,10 +55,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -73,19 +73,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable package manager
-        run: |
-          corepack enable
-          corepack install
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -112,7 +110,22 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Install Linux dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            wget
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -155,7 +168,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -173,18 +186,15 @@ jobs:
             libxdo-dev \
             wget
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable package manager
-        shell: bash
-        run: |
-          corepack enable
-          corepack install
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -198,4 +208,4 @@ jobs:
           shared-key: tauri-${{ matrix.os }}
 
       - name: Compile Tauri application
-        run: pnpm run tauri:build -- --no-bundle
+        run: pnpm --filter @limen/home-host exec tauri build --no-bundle

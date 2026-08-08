@@ -4,9 +4,9 @@ Este archivo se aplica a todo el repositorio. Todo agente o colaborador debe lee
 
 ## 1. Estado actual
 
-El proyecto está en **M0 — definición y decisión tecnológica**.
+El proyecto está en **M1 — UI-01: prueba visual controller-first**.
 
-**D-001 está resuelta: se usa Rust + Tauri 2 + React/TypeScript. D-008 también está resuelta: se usa un monorepo.** No se genera scaffolding hasta cerrar D-002 (IPC local) y D-006 (licencia/modelo de distribución). Mientras tanto solo se revisa documentación, se corrigen contradicciones y se registran decisiones.
+**D-001, D-002, D-006 y D-008 están resueltas:** Rust + Tauri 2 + React/TypeScript, JSON tipado sobre IPC local, Apache-2.0 y un monorepo con varios procesos. M1 solo materializa Home, su host fino y paquetes visuales; Core y Runtime Console comienzan en M2.
 
 ## 2. Objetivo inmutable
 

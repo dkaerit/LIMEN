@@ -7,11 +7,11 @@ Estado: las decisiones abiertas requieren confirmación del propietario del prod
 | ID | Decisión | Estado | Recomendación |
 |---|---|---|---|
 | D-001 | Pila de Core y Home | **ACEPTADA — 2026-08-07** | Opción A |
-| D-002 | Protocolo local | ABIERTA | JSON tipado sobre IPC local |
+| D-002 | Protocolo local | **ACEPTADA — 2026-08-07** | JSON tipado sobre IPC local |
 | D-003 | Backends de mando | PROPUESTA | GameInput + SDL3 |
 | D-004 | Modelo de runtime PS2 | ACEPTADA POR ESPECIFICACIÓN | PCSX2 oficial externo mediante Bridge |
 | D-005 | Baseline gráfico web | **ACEPTADA CON D-001** | WebGL2; WebGPU opcional |
-| D-006 | Licencia de LIMEN | ABIERTA | Definir antes de dependencias/distribución |
+| D-006 | Licencia de LIMEN | **ACEPTADA — 2026-08-07** | Apache-2.0 para el código propio |
 | D-007 | Empaquetado SteamOS | POSPUESTA A M6 | Spike Flatpak/AppImage |
 | D-008 | Organización del código | **ACEPTADA — 2026-08-07** | Un monorepo, varios procesos y paquetes |
 
@@ -153,11 +153,21 @@ Registro: `D-001 = A — Rust/Tauri/React`.
 
 ## D-002 — Protocolo local
 
-Estado: abierta; D-001 ya está resuelta y este protocolo debe cerrarse antes de crear Core.
+Estado: **aceptada el 7 de agosto de 2026 por el propietario del producto**.
+
+Decisión: mensajes JSON UTF-8 tipados y validados por JSON Schema sobre IPC local del sistema.
+
+- Named pipe por usuario en Windows.
+- Unix domain socket con permisos de usuario en Linux.
+- Frames con longitud `u32` little-endian seguida del payload JSON, con límite inicial de 1 MiB.
+- Conexión bidireccional para comandos/consultas y conexión dedicada para la suscripción de eventos.
+- Handshake inicial con `api_major`, capacidades del cliente y secreto efímero entregado por el host.
+- `schemas/v1` será la fuente neutral; los tipos Rust y TypeScript se validarán contra ella.
+- Todo mensaje lleva `message_version`; las peticiones, `request_id`; y los eventos de sesión, `session_id` y secuencia.
 
 ### Opción recomendada
 
-Mensajes JSON tipados y validados por esquema sobre transporte local del sistema:
+La opción aceptada parte de mensajes JSON tipados y validados por esquema sobre transporte local del sistema:
 
 - Named pipe en Windows.
 - Unix domain socket en Linux.
@@ -165,6 +175,8 @@ Mensajes JSON tipados y validados por esquema sobre transporte local del sistema
 - `api_major`, `message_version`, `request_id`, `session_id` y secuencia de evento.
 
 Ventajas: inspeccionable durante el prototipo, independiente de lenguaje y sin puerto TCP. El contrato podrá migrar a Protobuf si las mediciones lo justifican.
+
+El límite y el framing evitan depender de fronteras de lectura del transporte. Una versión mayor desconocida, un frame sobredimensionado, un JSON inválido o un handshake no autenticado fallan cerrados.
 
 Alternativa: Protobuf/gRPC desde el inicio. Aporta IDL y streaming maduros, pero complica named pipes, el bridge hacia una WebView y el debugging temprano.
 
@@ -197,13 +209,22 @@ Estado: **aceptada como condición de D-001**.
 
 - DOM/CSS para texto, navegación, accesibilidad y paneles.
 - Motion/Web Animations para transiciones 2D.
-- Three.js con WebGL2 para escena espacial.
+- Three.js con WebGL2 para la escena espacial, integrado de forma declarativa mediante React Three Fiber 9.
+- La escena 3D es ambiental: reacciona al puntero y al foco de teclado/mando, pero los menús y acciones siguen siendo DOM accesible.
+- Un recurso raster original actúa como fallback si WebGL no está disponible o el usuario reduce el movimiento.
 - WebGPU solo si una capability probe y benchmarks por plataforma lo aprueban.
 - Ninguna acción esencial existe únicamente dentro del canvas 3D.
 
 ## D-006 — Licencia de LIMEN
 
-Estado: abierta.
+Estado: **aceptada el 7 de agosto de 2026 por el propietario del producto**.
+
+Decisión: el código y la documentación originales de LIMEN se publican bajo **Apache License 2.0**, salvo que un archivo indique expresamente otra licencia compatible.
+
+- Cada dependencia conserva su propia licencia y debe entrar en el inventario legal antes de distribuir binarios.
+- La licencia de LIMEN no cubre ROMs, BIOS, firmware, juegos, arte comercial, emuladores ni otros componentes externos.
+- Ejecutar un runtime externo mediante un Bridge no autoriza a redistribuirlo.
+- Los paquetes y binarios deberán incluir los avisos exigidos por sus dependencias cuando comience M5.
 
 Debe elegirse antes de publicar binarios o adoptar dependencias con obligaciones recíprocas. Alternativas iniciales:
 
@@ -211,7 +232,7 @@ Debe elegirse antes de publicar binarios o adoptar dependencias con obligaciones
 - Core abierto y servicios/catálogos separados.
 - Producto propietario con inventario legal completo.
 
-Esta decisión afecta especialmente a Qt, Libretro/RetroArch, PCSX2 y cualquier distribución de binarios. Usar una API o ejecutar un proceso no concede automáticamente derecho a redistribuirlo.
+Esta decisión afecta especialmente a Libretro/RetroArch, PCSX2 y cualquier distribución de binarios. Usar una API o ejecutar un proceso no concede automáticamente derecho a redistribuirlo.
 
 ## D-007 — Paquete SteamOS
 

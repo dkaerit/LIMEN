@@ -26,6 +26,7 @@ dist/
 .vite/
 coverage/
 *.tsbuildinfo
+.turbo/
 
 # Python tooling
 __pycache__/

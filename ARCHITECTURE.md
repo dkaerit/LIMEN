@@ -48,7 +48,7 @@ LIMEN/
 │  ├─ client/                  cliente TypeScript generado/validado
 │  ├─ ui-kit/                  componentes visuales LIMEN
 │  ├─ focus-engine/            navegación espacial controller-first
-│  └─ graphics/                escena Three.js y perfiles de calidad
+│  └─ graphics/                escena Three.js/R3F y perfiles de calidad
 ├─ schemas/v1/                 fuente neutral del contrato local
 ├─ docs/                       ADR, diseños y pruebas
 ├─ tools/                      tareas de desarrollo, nunca runtime obligatorio
@@ -62,7 +62,8 @@ Esta es una arquitectura de destino, no una orden para crear carpetas vacías. E
 
 | Pieza | En 0.1 | Dónde vive | Responsabilidad |
 |---|---|---|---|
-| Home UI | Código dentro del WebView | `apps/home-ui` | Render, foco, animación y estado efímero. |
+| Home UI | Código dentro del WebView | `apps/home-ui` | Menús DOM, render, foco, animación y estado efímero. |
+| Graphics | Paquete enlazado en Home | `packages/graphics` | Escena ambiental Three.js/R3F, calidad adaptativa y fallback raster; nunca contiene acciones esenciales. |
 | Home Host | Proceso `limen-home` | `apps/home-host` | Ventana Tauri y puente fino hacia IPC. |
 | Core | Proceso `limen-core` | `services/core` | Estado autoritativo, seguridad y orquestación. |
 | Domain/Session/Input/Atlas/Vault | Librerías enlazadas en Core | `crates/*` | Responsabilidades internas probables y testeables. |
@@ -79,7 +80,7 @@ Input, Atlas y Vault son **capas lógicas**, pero no necesitan procesos propios 
 ```mermaid
 flowchart LR
     UI["React<br/>apps/home-ui"] -->|"invoke/eventos internos"| Host["limen-home<br/>Tauri host"]
-    Host <-->|"API v1 por named pipe<br/>propuesta D-002"| Core["limen-core"]
+    Host <-->|"API v1 por named pipe<br/>D-002"| Core["limen-core"]
     Core --> Modules["Session + Input + Atlas + Vault<br/>crates enlazados"]
     Core --> Bridge["Bridge PCSX2<br/>crate enlazado"]
     Bridge -->|"plan estructurado"| Core
@@ -129,13 +130,13 @@ Core debe poder arrancar, aceptar peticiones y supervisar una sesión sin que Ho
 
 Cliente visual a pantalla completa. Contiene:
 
-- Presentación 2D y 3D.
+- Presentación 2D en DOM/CSS y escena 3D ambiental mediante React Three Fiber.
 - Motor de foco espacial.
 - Rutas, transiciones y sonido de interfaz.
 - Adaptación de glifos.
 - Modelo local efímero derivado de snapshots y eventos del Core.
 
-No contiene reglas de lanzamiento ni estado autoritativo.
+No contiene reglas de lanzamiento ni estado autoritativo. Ningún menú, texto o acción necesaria vive dentro del canvas WebGL: el 3D puede degradarse a un fallback estático sin romper el recorrido.
 
 ### 4.3 Session Manager
 
@@ -243,9 +244,11 @@ Runtime Console es una herramienta de desarrollo que muestra:
 
 Nunca se abre automáticamente delante de un usuario normal.
 
+Su primera versión llega en M2, cuando puede observar una sesión simulada y eventos reales del Core. Evoluciona durante M3/M4 con diagnósticos del Bridge, pero permanece de solo lectura salvo comandos de diagnóstico explícitos y auditables.
+
 ## 5. Contrato local
 
-La decisión del transporte se documenta como **D-002**. Independientemente de ella:
+El transporte aceptado en **D-002** usa JSON UTF-8 con framing por longitud sobre named pipes en Windows y Unix domain sockets en Linux. Además:
 
 - El contrato tiene versión mayor (`v1`) y versiones de mensaje.
 - Hay comandos, consultas, snapshots y eventos.

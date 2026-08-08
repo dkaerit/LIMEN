@@ -1,0 +1,35 @@
+{
+  "name": "limen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Controller-first universal game runtime environment.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @limen/home-ui dev",
+    "dev:host": "pnpm --filter @limen/home-ui dev --host 0.0.0.0",
+    "build": "pnpm --filter @limen/home-ui build",
+    "preview": "pnpm --filter @limen/home-ui preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "tauri:dev": "pnpm --filter @limen/home-host tauri:dev",
+    "tauri:build": "pnpm --filter @limen/home-host tauri:build"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "eslint": "10.8.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
+  }
+}

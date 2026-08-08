@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LIMEN",
+  "version": "0.1.0",
+  "identifier": "app.limen.home",
+  "build": {
+    "beforeDevCommand": {
+      "script": "corepack pnpm dev --host 127.0.0.1 --port 1420",
+      "cwd": "../../home-ui",
+      "wait": false
+    },
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": {
+      "script": "corepack pnpm build",
+      "cwd": "../../home-ui"
+    },
+    "frontendDist": "../../home-ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LIMEN Home",
+        "width": 1600,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "center": true,
+        "decorations": false,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Game",
+    "shortDescription": "Controller-first universal game runtime environment."
+  }
+}
