@@ -83,10 +83,17 @@ impl fmt::Debug for RedactedLaunchPlan<'_> {
             .debug_struct("LaunchPlan")
             .field(
                 "executable",
-                &self.0.executable.file_name().unwrap_or(OsStr::new("[unknown]")),
+                &self
+                    .0
+                    .executable
+                    .file_name()
+                    .unwrap_or(OsStr::new("[unknown]")),
             )
             .field("argument_count", &self.0.argv.len())
-            .field("environment_keys", &self.0.environment.keys().collect::<Vec<_>>())
+            .field(
+                "environment_keys",
+                &self.0.environment.keys().collect::<Vec<_>>(),
+            )
             .finish()
     }
 }

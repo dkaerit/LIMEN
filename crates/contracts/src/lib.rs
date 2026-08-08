@@ -26,7 +26,9 @@ impl EphemeralSecret {
         self.0
             .iter()
             .zip(candidate)
-            .fold(0_u8, |difference, (left, right)| difference | (left ^ right))
+            .fold(0_u8, |difference, (left, right)| {
+                difference | (left ^ right)
+            })
             == 0
     }
 }
@@ -189,8 +191,13 @@ pub enum EventPayload {
         previous: SessionState,
         current: SessionState,
     },
-    SessionOutcomeRecorded { outcome: SessionOutcome },
-    ModuleHealthChanged { module: String, state: ModuleHealth },
+    SessionOutcomeRecorded {
+        outcome: SessionOutcome,
+    },
+    ModuleHealthChanged {
+        module: String,
+        state: ModuleHealth,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

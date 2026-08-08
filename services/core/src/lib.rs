@@ -31,10 +31,8 @@ impl Core {
         }
 
         self.next_session_number = self.next_session_number.saturating_add(1);
-        let session_id = SessionId::parse(format!(
-            "session-simulated-{:06}",
-            self.next_session_number
-        ))?;
+        let session_id =
+            SessionId::parse(format!("session-simulated-{:06}", self.next_session_number))?;
         self.active_session = Some(SessionMachine::new(session_id.clone(), game_id));
         Ok(session_id)
     }

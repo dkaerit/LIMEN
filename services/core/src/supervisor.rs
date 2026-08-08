@@ -47,11 +47,7 @@ impl ManagedProcess {
         }
     }
 
-    pub fn wait(
-        &mut self,
-        timeout: Duration,
-        cancelled: &AtomicBool,
-    ) -> io::Result<ProcessExit> {
+    pub fn wait(&mut self, timeout: Duration, cancelled: &AtomicBool) -> io::Result<ProcessExit> {
         let started_at = Instant::now();
 
         loop {
