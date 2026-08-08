@@ -36,9 +36,10 @@ Salida:
 
 ## M1 — UI-01: prueba visual controller-first
 
-Estado: **candidato de cierre técnico** — implementación y validación de
-escritorio completadas; pendiente aceptación física 1080p y reconexión de mando
-en la ROG Xbox Ally de referencia.
+Estado: **integrado — 2026-08-08**. El propietario aprobó continuar a M2 tras
+completar los criterios técnicos y la validación de escritorio. La medición
+física 1080p y la reconexión de mando en la ROG Xbox Ally permanecen registradas
+como evidencia de seguimiento; no se declaran ejecutadas.
 
 Objetivo: demostrar que el renderer elegido puede sentirse como una consola antes de construir runtimes.
 
@@ -68,6 +69,8 @@ Salida:
 - Si falla, se evalúa la siguiente opción de D-001 antes de construir Core.
 
 ## M2 — CORE-01: contrato y sesión simulada
+
+Estado: **en curso**
 
 Objetivo: separar físicamente Home de Core y probar el ciclo de vida sin emulador.
 

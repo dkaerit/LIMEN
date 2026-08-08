@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -25,6 +26,7 @@ REQUIRED_FILES = (
     "package.json",
     "pnpm-workspace.yaml",
     "Cargo.toml",
+    "schemas/v1/limen-api.schema.json",
 )
 
 TEXT_SUFFIXES = {
@@ -138,6 +140,36 @@ def check_text_files(files: list[Path], errors: list[str]) -> None:
                 errors.append(f"trailing whitespace: {relative}:{number}")
 
 
+def check_json_files(files: list[Path], errors: list[str]) -> None:
+    for path in files:
+        if path.suffix.lower() != ".json":
+            continue
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            errors.append(
+                f"invalid JSON: {path.relative_to(ROOT)}:{error.lineno}:{error.colno}"
+            )
+
+
+def check_contract_schema(errors: list[str]) -> None:
+    schema_path = ROOT / "schemas/v1/limen-api.schema.json"
+    if not schema_path.is_file():
+        return
+
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        errors.append("local API schema must use JSON Schema draft 2020-12")
+    definitions = schema.get("$defs", {})
+    for required in ("handshake", "request", "response", "event"):
+        if required not in definitions:
+            errors.append(f"local API schema is missing $defs/{required}")
+
+
 def check_markdown_links(files: list[Path], errors: list[str]) -> None:
     for path in files:
         if path.suffix.lower() != ".md":
@@ -183,6 +215,8 @@ def main() -> int:
     check_required_files(errors)
     check_forbidden_files(files, errors)
     check_text_files(files, errors)
+    check_json_files(files, errors)
+    check_contract_schema(errors)
     check_markdown_links(files, errors)
     check_workflow(errors)
 

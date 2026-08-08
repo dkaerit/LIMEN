@@ -1,0 +1,11 @@
+[package]
+name = "limen-bridge-sdk"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Capability and launch-plan boundary implemented by LIMEN Bridges."
+
+[dependencies]
+limen-domain = { path = "../domain" }

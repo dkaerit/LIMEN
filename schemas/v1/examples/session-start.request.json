@@ -1,0 +1,9 @@
+{
+  "api_major": 1,
+  "message_version": 1,
+  "request_id": "request-example-001",
+  "payload": {
+    "method": "session.start",
+    "game_id": "game-placeholder-001"
+  }
+}

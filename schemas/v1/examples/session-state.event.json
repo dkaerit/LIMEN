@@ -1,0 +1,11 @@
+{
+  "api_major": 1,
+  "message_version": 1,
+  "sequence": 4,
+  "session_id": "session-example-001",
+  "event": {
+    "type": "session.state_changed",
+    "previous": "launching",
+    "current": "running"
+  }
+}
