@@ -18,10 +18,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@react-three/fiber": "9.7.0",
-    "three": "0.182.0"
+    "@react-three/fiber": "9.8.1",
+    "three": "0.186.1"
   },
   "devDependencies": {
-    "@types/three": "0.182.0"
+    "@types/three": "0.186.0"
   }
 }
